@@ -105,6 +105,7 @@ export default function BookCard({ book }: BookCardProps) {
             alt={`${book.title}の表紙`}
             className="card-image"
             loading="lazy"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>画像なし</div>
