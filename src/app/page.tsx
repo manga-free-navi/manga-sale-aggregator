@@ -9,7 +9,7 @@ import FilterBar from '../components/FilterBar';
 import AdContainer from '../components/AdContainer';
 
 export default function Home() {
-  // 不要な useState を廃止し、useMemo で結合定数を定義 (ハイドレーション不一致を防ぐ)
+  // 自動データと手動キャンペーンデータを結合 (ハイドレーション不一致を防ぐため useMemo を使用)
   const books = useMemo(() => {
     const autoList = (initialBooks || []) as Book[];
     const manualList = (manualBooks || []) as Book[];
@@ -45,7 +45,7 @@ export default function Home() {
       result = result.filter((b) => b.genre === selectedGenre);
     }
 
-    // 3. 並び替え
+    // 3. 並び替え (安定ソートを保証するため、同一条件時は ID で順序を決定します)
     result.sort((a, b) => {
       // 手動キャンペーンID（jumpplusなど）を常に最上部に固定したい場合のルール
       const isAManual = a.id.startsWith('manual-');
@@ -55,23 +55,42 @@ export default function Home() {
 
       if (sortBy === 'discountDesc') {
         // 割引率の高い順
-        return b.discountRate - a.discountRate;
+        if (b.discountRate !== a.discountRate) {
+          return b.discountRate - a.discountRate;
+        }
+        // 割引率が同じ場合、IDのアルファベット順で順番を固定 (ミスマッチクラッシュ防止)
+        return a.id.localeCompare(b.id);
       }
       if (sortBy === 'priceAsc') {
         // 価格の安い順
-        return a.salePrice - b.salePrice;
+        if (a.salePrice !== b.salePrice) {
+          return a.salePrice - b.salePrice;
+        }
+        return a.id.localeCompare(b.id);
       }
       if (sortBy === 'endDateAsc') {
         // 終了日が近い順 (nullは後ろへ)
-        if (!a.endDate) return 1;
-        if (!b.endDate) return -1;
-        return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+        if (!a.endDate && b.endDate) return 1;
+        if (a.endDate && !b.endDate) return -1;
+        if (!a.endDate && !b.endDate) return a.id.localeCompare(b.id);
+        
+        const timeA = new Date(a.endDate!).getTime();
+        const timeB = new Date(b.endDate!).getTime();
+        if (timeA !== timeB) {
+          return timeA - timeB;
+        }
+        return a.id.localeCompare(b.id);
       }
       if (sortBy === 'newest') {
         // データ更新順
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        const timeA = new Date(a.updatedAt).getTime();
+        const timeB = new Date(b.updatedAt).getTime();
+        if (timeA !== timeB) {
+          return timeB - timeA;
+        }
+        return a.id.localeCompare(b.id);
       }
-      return 0;
+      return a.id.localeCompare(b.id);
     });
 
     return result;
