@@ -1,0 +1,49 @@
+name: Update Manga Sales Data
+
+on:
+  schedule:
+    # 毎日日本時間 AM 7:00 (UTC 22:00) に自動実行
+    - cron: '0 22 * * *'
+  workflow_dispatch: # GitHubの管理画面から手動で即座に実行するボタンも設置します
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリのチェックアウト
+        uses: actions/checkout@v4
+        with:
+          # 自動で変更データをプッシュするため、書き込み権限付きでチェックアウトします
+          persist-credentials: true
+
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 依存関係のインストール
+        run: npm ci
+
+      - name: スクレイパーの実行 (楽天API接続)
+        env:
+          # 楽天のAPIキーやアフィリエイトIDは、GitHubのSecrets（暗号化設定）から安全に読み込みます
+          RAKUTEN_APP_ID: ${{ secrets.RAKUTEN_APP_ID }}
+          RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
+          RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
+        run: node src/scraper/run-scraper.js
+
+      - name: データの更新判定と GitHub への書き戻し
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/sales.json
+          
+          # データの変更がある場合のみコミットしてプッシュします
+          if ! git diff --cached --exit-code; then
+            git commit -m "chore: 楽天Koboセールデータを自動更新 [skip ci]"
+            git push origin main
+          else
+            echo "データに変更はありませんでした。"
+          fi
