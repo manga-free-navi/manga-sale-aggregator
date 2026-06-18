@@ -9,12 +9,12 @@ import FilterBar from '../components/FilterBar';
 import AdContainer from '../components/AdContainer';
 
 export default function Home() {
-  // 自動データと手動キャンペーンデータを結合
-  const [books] = useState<Book[]>(() => {
+  // 不要な useState を廃止し、useMemo で結合定数を定義 (ハイドレーション不一致を防ぐ)
+  const books = useMemo(() => {
     const autoList = (initialBooks || []) as Book[];
     const manualList = (manualBooks || []) as Book[];
     return [...manualList, ...autoList]; // 手動割り込みデータを優先して上に表示させるため、先に結合します
-  });
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');

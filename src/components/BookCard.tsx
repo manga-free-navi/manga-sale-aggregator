@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 export interface Book {
   id: string;
@@ -27,9 +27,17 @@ interface BookCardProps {
  * 各漫画セール・無料キャンペーン情報を表示するカードコンポーネント
  */
 export default function BookCard({ book }: BookCardProps) {
+  // ハイドレーションエラーを防止するためのマウント確認ステート
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // セール終了までの残り日数を計算
   const remainingDaysText = useMemo(() => {
-    if (!book.endDate) return null;
+    // クライアント側でマウントされるまでは計算をスキップし、サーバーとクライアントでの時間差によるエラーを防ぐ
+    if (!book.endDate || !mounted) return null;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -51,7 +59,7 @@ export default function BookCard({ book }: BookCardProps) {
     }
     
     return `${book.endDate} まで`;
-  }, [book.endDate]);
+  }, [book.endDate, mounted]);
 
   // ストア情報（表示名、ボタン用クラス、アクションテキスト）の動的判定
   const storeInfo = useMemo(() => {
@@ -81,12 +89,6 @@ export default function BookCard({ book }: BookCardProps) {
       default:
         return { name: 'ストア', btnClass: '', action: '詳細を見る' };
     }
-  }, [book.store]);
-
-  // アプリ系ストア（アフィリエイト非対応・送客メイン）かどうか
-  const isAppStore = useMemo(() => {
-    const appStores = ['jumpplus', 'magapoke', 'sundaywebry', 'mangaone', 'yanjan', 'zebrack', 'piccoma', 'linemanga'];
-    return appStores.includes(book.store);
   }, [book.store]);
 
   return (
@@ -120,7 +122,7 @@ export default function BookCard({ book }: BookCardProps) {
         </h3>
         <p className="book-author">{book.author}</p>
 
-        {/* 価格表示 (アプリ無料キャンペーンの場合は0円表記) */}
+        {/* 価格表示 */}
         <div className="price-container">
           {book.salePrice === 0 ? (
             <span className="sale-price free">無料公開中</span>
@@ -140,7 +142,7 @@ export default function BookCard({ book }: BookCardProps) {
         {/* 下部メタ情報 (掲載ストア・終了期限など) */}
         <div className="book-meta">
           <span>{storeInfo.name}</span>
-          {remainingDaysText && (
+          {mounted && remainingDaysText && (
             <span className="end-date">{remainingDaysText}</span>
           )}
         </div>
