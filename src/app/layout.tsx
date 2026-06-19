@@ -62,7 +62,7 @@ export default function RootLayout({
               当サイトは、各電子書籍ストア公式API等のデータを元に、お得なセール情報をお届けしています。<br />
               アフィリエイトリンクおよびGoogle AdSenseによる広告表示を導入し、運営・維持を行っております。
             </p>
-            <p>&copy; {new Date().getFullYear()} 無料＆激安セール漫画ナビ. All Rights Reserved.</p>
+            <p>&copy; 2026 無料＆激安セール漫画ナビ. All Rights Reserved.</p>
           </div>
         </footer>
       </body>

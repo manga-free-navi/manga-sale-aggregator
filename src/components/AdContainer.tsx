@@ -12,6 +12,7 @@ interface AdContainerProps {
 /**
  * Google AdSense用の広告コンポーネント
  * 広告コードがロードされるまでは、美しいプレースホルダーを表示してレイアウトシフトを防ぎます。
+ * ハイドレーションミスマッチを防ぐため、マウントされるまでは静的なコンテナ枠のみを描画します。
  */
 export default function AdContainer({
   slot,
@@ -20,9 +21,12 @@ export default function AdContainer({
   type = 'inline',
 }: AdContainerProps) {
   const [adLoaded, setAdLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || '';
 
   useEffect(() => {
+    setMounted(true);
+
     // 開発中またはAdSense IDが未設定の場合は何もしない
     if (!adsenseClient || adsenseClient === 'ca-pub-XXXXXXXXXXXXXXXX') {
       return;
@@ -38,10 +42,20 @@ export default function AdContainer({
     }
   }, [adsenseClient]);
 
+  const wrapperClass = type === 'sidebar' ? 'ad-wrapper sidebar-ad' : 'ad-wrapper inline-ad';
+
+  // ハイドレーションミスマッチを防ぐため、マウントされるまではサーバー側と同じ静的ラッパーのみを返す
+  if (!mounted) {
+    return (
+      <div className={wrapperClass}>
+        <span className="ad-label">Sponsor / 広告</span>
+        <div className="ad-placeholder" style={{ minHeight: type === 'sidebar' ? '220px' : '100px' }} />
+      </div>
+    );
+  }
+
   // クライアントIDが未設定、またはダミーの場合は開発者用プレースホルダーを表示
   const isDummyClient = !adsenseClient || adsenseClient === 'ca-pub-XXXXXXXXXXXXXXXX';
-
-  const wrapperClass = type === 'sidebar' ? 'ad-wrapper sidebar-ad' : 'ad-wrapper inline-ad';
 
   return (
     <div className={wrapperClass}>
