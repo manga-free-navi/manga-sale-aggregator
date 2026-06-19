@@ -356,7 +356,7 @@ button, input, select {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  height: 3.6em; /* 3行分の高さを確保 */
+  max-height: 3.6em; /* 最大3行分の高さを確保（余計な余白を防ぐ） */
 }
 
 .book-meta {
@@ -709,4 +709,59 @@ button, input, select {
 .read-more-btn:hover {
   color: var(--text-primary);
   text-decoration: underline;
+}
+
+/* 巻数バッジ直接リンク対応 */
+.volume-badge-wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  background-color: var(--bg-dark-700);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: var(--transition-smooth);
+}
+
+.volume-badge-wrapper:hover {
+  border-color: var(--accent-cyan);
+}
+
+.volume-badge-wrapper .volume-badge {
+  background: none;
+  border: none;
+  border-radius: 0;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  padding: 4px 6px 4px 10px;
+}
+
+.volume-badge-wrapper .volume-badge.active {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  color: white;
+}
+
+.volume-direct-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px 4px 4px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  transition: var(--transition-smooth);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.volume-direct-link:hover {
+  color: var(--accent-cyan);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.volume-badge-wrapper:has(.volume-badge.active) .volume-direct-link {
+  color: white;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--accent-purple);
 }

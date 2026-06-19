@@ -127,8 +127,8 @@ export default function BookCard({ books }: BookCardProps) {
     }
   }, [currentBook.store]);
 
-  // あらすじが長いかどうかの判定 (アコーディオンボタン表示用)
-  const isLongDescription = currentBook.description && currentBook.description.length > 75;
+  // あらすじが長いかどうかの判定 (アコーディオンボタン表示用 - 100文字以上)
+  const isLongDescription = currentBook.description && currentBook.description.length > 100;
 
   return (
     <article className="book-card">
@@ -170,24 +170,34 @@ export default function BookCard({ books }: BookCardProps) {
         {/* シリーズ巻数切り替えUI (複数巻ある場合のみ表示) */}
         {books.length > 1 && (
           <div className="series-volumes-container">
-            <span className="series-volumes-label">巻・タイトル選択:</span>
+            <span className="series-volumes-label">巻・タイトル選択 ( ↗ で直接ストアへ進む ):</span>
             <div className="volume-badge-list">
               {books.map((b, index) => {
                 const isActive = b.id === currentBook.id;
                 const label = getVolumeLabel(b.title, index);
                 return (
-                  <button
-                    key={b.id}
-                    onClick={() => {
-                      setCurrentBook(b);
-                      // 巻が切り替わったらアコーディオンは閉じる
-                      setIsExpanded(false);
-                    }}
-                    className={`volume-badge ${isActive ? 'active' : ''}`}
-                    title={b.title}
-                  >
-                    {label}
-                  </button>
+                  <div key={b.id} className="volume-badge-wrapper">
+                    <button
+                      onClick={() => {
+                        setCurrentBook(b);
+                        // 巻が切り替わったらアコーディオンは閉じる
+                        setIsExpanded(false);
+                      }}
+                      className={`volume-badge ${isActive ? 'active' : ''}`}
+                      title={`${b.title} に切り替え`}
+                    >
+                      {label}
+                    </button>
+                    <a
+                      href={b.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="volume-direct-link"
+                      title={`${b.title} を直接ストアで開く`}
+                    >
+                      ↗
+                    </a>
+                  </div>
                 );
               })}
             </div>
@@ -235,7 +245,9 @@ export default function BookCard({ books }: BookCardProps) {
         {/* アクションボタン */}
         <a href={currentBook.url} target="_blank" rel="noopener noreferrer">
           <button className={`card-button ${storeInfo.btnClass}`}>
-            <span>{storeInfo.name} で{storeInfo.action}</span>
+            <span style={{ fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '230px' }}>
+              {currentBook.title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '')} を {storeInfo.name} で{storeInfo.action}
+            </span>
             <span style={{ fontSize: '0.8rem' }}>↗</span>
           </button>
         </a>
