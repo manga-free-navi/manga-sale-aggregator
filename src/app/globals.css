@@ -512,6 +512,17 @@ button, input, select {
   box-shadow: 0 0 15px rgba(6, 199, 85, 0.4);
 }
 
+/* 12. PR TIMES */
+.btn-prtimes {
+  background: linear-gradient(135deg, #0052ad, #003775);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-prtimes:hover {
+  box-shadow: 0 0 15px rgba(0, 82, 173, 0.4);
+}
+
+
 /* 広告プレースホルダー */
 .ad-wrapper {
   background-color: var(--bg-dark-800);
@@ -764,4 +775,69 @@ button, input, select {
   color: white;
   border-left: 1px solid rgba(255, 255, 255, 0.15);
   background: var(--accent-purple);
+}
+
+/* サイト切り替えタブ */
+.header-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  padding: 0.2rem;
+  border-radius: 30px;
+  gap: 0.2rem;
+  margin: 0 1.5rem;
+}
+.header-tab {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.45rem 1.1rem;
+  border-radius: 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+.header-tab:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+.header-tab.active {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  color: #0b0f19;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.35);
+}
+
+/* レスポンシブ調整（タブ非表示対策） */
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .header-tabs {
+    margin: 0.5rem 0;
+  }
+}
+
+/* 緊急期限バッジ */
+.end-date.urgent {
+  color: #ef4444 !important;
+  font-weight: 700;
+  animation: pulse-urgent 1.5s infinite;
+}
+@keyframes pulse-urgent {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 0.8; }
+}
+
+/* シェア・コピーボタンホバーエフェクト */
+.action-btn.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+.action-btn.share-btn:hover {
+  background: #1a8cd8 !important;
 }

@@ -14,14 +14,51 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
+        <meta name="theme-color" content="#f97316" />
+      </head>
       <body>
+        <script dangerouslySetInnerHTML={{__html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                console.log('SW registered:', reg.scope);
+              }).catch(function(err) {
+                console.error('SW registration failed:', err);
+              });
+            });
+          }
+        `}} />
         {/* ヘッダー領域 */}
         <header className="header">
           <div className="container header-container">
             <div className="logo">
               <span>無料＆激安セール漫画ナビ</span>
             </div>
+
+            {/* サイト切り替えタブ */}
+            <div className="header-tabs">
+              <a 
+                href={process.env.NEXT_PUBLIC_ANIME_SITE_URL || "../youtube-free-anime-aggregator/out/index.html"} 
+                className="header-tab"
+                id="tab-to-anime"
+              >
+                <span>📺 無料アニメ</span>
+              </a>
+              <a href="#" className="header-tab active">
+                <span>📚 漫画セール</span>
+              </a>
+              <a 
+                href={process.env.NEXT_PUBLIC_GAME_SITE_URL || "../game-sale-aggregator/out/index.html"} 
+                className="header-tab"
+                id="tab-to-game"
+              >
+                <span>🎮 ゲームセール</span>
+              </a>
+            </div>
+
             <nav className="nav-links">
               <a href="/" className="nav-link active">ホーム</a>
               <a href="#about" className="nav-link">サイトについて</a>

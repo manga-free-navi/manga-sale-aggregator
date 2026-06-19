@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 // 自動収集データと、手動割り込みデータを両方インポートして結合します
 import initialBooks from '../data/sales.json';
 import manualBooks from '../data/manual_sales.json';
-import BookCard, { Book } from './BookCard';
+import BookCard, { Book, StoreDeal } from './BookCard';
 import FilterBar from './FilterBar';
 import AdContainer from './AdContainer';
 
@@ -39,17 +39,104 @@ function getSeriesKey(title: string): string {
   return key.trim();
 }
 
+function getBookMaxDiscount(bk: Book): number {
+  const deals = Object.values(bk.stores).filter((deal): deal is StoreDeal => !!deal);
+  if (deals.length === 0) return 0;
+  return Math.max(...deals.map(d => d.discountRate));
+}
+
+function getBookMinPrice(bk: Book): number {
+  const deals = Object.values(bk.stores).filter((deal): deal is StoreDeal => !!deal);
+  if (deals.length === 0) return Infinity;
+  return Math.min(...deals.map(d => d.salePrice));
+}
+
 export default function MainApp() {
-  // 自動データと手動キャンペーンデータを結合
+  // 自動データと手動キャンペーンデータを結合（手動データの互換性を補正）
   const books = useMemo(() => {
     const autoList = (initialBooks || []) as Book[];
-    const manualList = (manualBooks || []) as Book[];
+    const rawManualList = (manualBooks || []) as any[];
+    
+    const manualList: Book[] = rawManualList.map((item, idx) => {
+      if (item.stores) return item as Book;
+      
+      const storeKey = item.store || 'amazon';
+      return {
+        id: item.id || `manual-${idx}`,
+        title: item.title || '',
+        author: item.author || '',
+        publisher: item.publisher || '',
+        imageUrl: item.imageUrl || '',
+        genre: item.genre || 'その他',
+        endDate: item.endDate || null,
+        description: item.description || '',
+        updatedAt: item.updatedAt || new Date().toISOString(),
+        stores: {
+          [storeKey]: {
+            url: item.url || '',
+            originalPrice: typeof item.originalPrice === 'number' ? item.originalPrice : parseInt(item.originalPrice) || 0,
+            salePrice: typeof item.salePrice === 'number' ? item.salePrice : parseInt(item.salePrice) || 0,
+            discountRate: typeof item.discountRate === 'number' ? item.discountRate : parseInt(item.discountRate) || 0,
+          }
+        }
+      };
+    });
     return [...manualList, ...autoList];
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('discountDesc');
+  const [hideRead, setHideRead] = useState(false);
+  const [readList, setReadList] = useState<string[]>([]);
+
+  // 閲覧設定の初期復元
+  useEffect(() => {
+    try {
+      const savedGenre = localStorage.getItem('manga_filter_genre');
+      const savedSort = localStorage.getItem('manga_sort_by');
+      const savedHideRead = localStorage.getItem('manga_hide_read');
+      
+      if (savedGenre) setSelectedGenre(savedGenre);
+      if (savedSort) setSortBy(savedSort);
+      if (savedHideRead) setHideRead(savedHideRead === 'true');
+    } catch (e) {
+      console.error('Failed to load manga preferences:', e);
+    }
+  }, []);
+
+  // 設定変更時の保存用ハンドラー
+  const handleGenreChange = (genre: string) => {
+    setSelectedGenre(genre);
+    try {
+      localStorage.setItem('manga_filter_genre', genre);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort);
+    try {
+      localStorage.setItem('manga_sort_by', sort);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleHideReadChange = (hide: boolean) => {
+    setHideRead(hide);
+    try {
+      localStorage.setItem('manga_hide_read', String(hide));
+    } catch (e) { console.error(e); }
+  };
+
+  // 既読状態の同期（LocalStorageの監視）
+  useEffect(() => {
+    const syncReadList = () => {
+      const list = JSON.parse(localStorage.getItem('manga_read_list') || '[]');
+      setReadList(list);
+    };
+    syncReadList();
+    window.addEventListener('readListUpdated', syncReadList);
+    return () => window.removeEventListener('readListUpdated', syncReadList);
+  }, []);
 
   // 動的ジャンル一覧の抽出 (順序を完全に一意にするため .sort() を追加)
   const genres = useMemo(() => {
@@ -74,6 +161,11 @@ export default function MainApp() {
     // 2. ジャンル絞り込み
     if (selectedGenre !== 'all') {
       result = result.filter((b) => b.genre === selectedGenre);
+    }
+
+    // 2.5 既読作品の非表示
+    if (hideRead) {
+      result = result.filter((b) => !readList.includes(b.id));
     }
 
     // 3. シリーズごとにグループ化
@@ -131,8 +223,8 @@ export default function MainApp() {
 
       if (sortBy === 'discountDesc') {
         // グループ内での最大割引率を基準に降順ソート
-        const maxDiscountA = Math.max(...a.books.map(bk => bk.discountRate));
-        const maxDiscountB = Math.max(...b.books.map(bk => bk.discountRate));
+        const maxDiscountA = Math.max(...a.books.map(bk => getBookMaxDiscount(bk)));
+        const maxDiscountB = Math.max(...b.books.map(bk => getBookMaxDiscount(bk)));
         if (maxDiscountB !== maxDiscountA) {
           return maxDiscountB - maxDiscountA;
         }
@@ -141,8 +233,8 @@ export default function MainApp() {
       
       if (sortBy === 'priceAsc') {
         // グループ内での最安価格を基準に昇順ソート
-        const minPriceA = Math.min(...a.books.map(bk => bk.salePrice));
-        const minPriceB = Math.min(...b.books.map(bk => bk.salePrice));
+        const minPriceA = Math.min(...a.books.map(bk => getBookMinPrice(bk)));
+        const minPriceB = Math.min(...b.books.map(bk => getBookMinPrice(bk)));
         if (minPriceA !== minPriceB) {
           return minPriceA - minPriceB;
         }
@@ -182,10 +274,10 @@ export default function MainApp() {
     <div className="container" style={{ paddingTop: '20px' }}>
       {/* ヒーローセクション */}
       <section className="hero">
-        <h1>今だけの無料＆激安セール漫画を見逃すな！</h1>
+        <h1>無料＆割引セール中のコミック情報まとめ</h1>
         <p>
-          期間限定で無料になっている話題作や、割引セール中の電子書籍コミック情報をまとめました。<br />
-          主要無料漫画アプリ（ジャンプ+、マガポケ、サンデーうぇぶり等）の特大キャンペーン情報も掲載中！
+          主要な電子書籍ストアや公式マンガアプリで公開されている、期間限定の無料漫画やお得な割引セール情報を集めて整理しています。<br />
+          今日読める作品のチェックや、新しい漫画との出会いにお役立てください。
         </p>
       </section>
 
@@ -194,11 +286,28 @@ export default function MainApp() {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         selectedGenre={selectedGenre}
-        setSelectedGenre={setSelectedGenre}
+        setSelectedGenre={handleGenreChange}
         sortBy={sortBy}
-        setSortBy={setSortBy}
+        setSortBy={handleSortChange}
         genres={genres}
       />
+
+      {/* 補助コントロール（件数 ＆ 既読非表示トグル） */}
+      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center', fontSize: '0.9rem' }}>
+        <div style={{ color: 'var(--text-secondary)' }}>
+          該当シリーズ: <strong>{filteredAndSortedGroups.length}</strong> 作品
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-hide-read">
+          <input
+            type="checkbox"
+            checked={hideRead}
+            onChange={(e) => handleHideReadChange(e.target.checked)}
+            id="checkbox-hide-read"
+            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+          />
+          既読にした作品を非表示にする
+        </label>
+      </div>
 
       {/* メインレイアウト */}
       <div className="main-layout">
