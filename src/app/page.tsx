@@ -104,9 +104,9 @@ export default function Home() {
   // サーバーサイド・マウント前（初回描画時）はローディングのみを返し、不一致エラー（React #418）を物理的に防ぎます
   if (!mounted) {
     return (
-      <div className="container" style={{ padding: '100px 20px', textAlign: 'center', minHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="container" style={{ padding: '100px 20px', textAlign: 'center', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0b0f19', color: '#f8fafc' }}>
         <div className="logo" style={{ fontSize: '2rem', marginBottom: '20px' }}>無料＆激安セール漫画ナビ</div>
-        <p style={{ color: 'var(--text-secondary)' }}>最新のセール情報を読み込み中...</p>
+        <p style={{ color: '#94a3b8' }}>最新のセール情報を読み込み中...</p>
       </div>
     );
   }

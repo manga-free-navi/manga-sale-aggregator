@@ -17,8 +17,8 @@ export default function PrivacyPolicy() {
   // マウント前はローディング枠を返し、ハイドレーション時の不一致を防止
   if (!mounted) {
     return (
-      <div className="container" style={{ padding: '100px 20px', textAlign: 'center', minHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>ページを読み込み中...</p>
+      <div className="container" style={{ padding: '100px 20px', textAlign: 'center', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0b0f19', color: '#f8fafc' }}>
+        <p style={{ color: '#94a3b8' }}>ページを読み込み中...</p>
       </div>
     );
   }

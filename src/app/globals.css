@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
 :root {
+  color-scheme: dark;
   /* カラーパレット (ダークモードテーマ) */
   --bg-dark-900: #0b0f19;      /* ディープブラック */
   --bg-dark-800: #161f30;      /* カード・セクションの背景 */
@@ -30,7 +31,7 @@
   padding: 0;
 }
 
-body {
+html, body {
   background-color: var(--bg-dark-900);
   color: var(--text-primary);
   font-family: var(--font-sans);
