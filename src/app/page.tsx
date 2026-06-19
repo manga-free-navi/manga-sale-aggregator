@@ -23,7 +23,7 @@ export default function Home() {
   // 動的ジャンル一覧の抽出
   const genres = useMemo(() => {
     const allGenres = books.map((b) => b.genre).filter(Boolean);
-    return Array.from(new Set(allGenres));
+    return Array.from(new Set(allGenres)).sort();
   }, [books]);
 
   // 検索・フィルタリング・ソートの適用
