@@ -80,30 +80,42 @@ export default function MainApp() {
     const groupsMap = new Map<string, Book[]>();
     
     result.forEach((book) => {
-      // 手動入力データはそれぞれ独立したキャンペーンであることが多いため、シリーズ集約の対象外にする
-      if (book.id.startsWith('manual-')) {
-        groupsMap.set(book.id, [book]);
-        return;
-      }
-      
       const key = getSeriesKey(book.title);
       if (!groupsMap.has(key)) {
         groupsMap.set(key, []);
       }
-      groupsMap.get(key)!.push(book);
+      
+      // 手動データを配列の先頭にするため、unshift を使用し、自動データは末尾に push します
+      if (book.id.startsWith('manual-')) {
+        groupsMap.get(key)!.unshift(book);
+      } else {
+        groupsMap.get(key)!.push(book);
+      }
     });
 
     const groupedResults: SeriesGroup[] = [];
     groupsMap.forEach((groupBooks, seriesKey) => {
-      // グループ内の書籍をタイトルで昇順ソート（通常、巻数順に並ぶようにする）
-      groupBooks.sort((a, b) => a.title.localeCompare(b.title));
-      
-      // 最初の本（代表本）のIDをグループ全体のIDとする
-      groupedResults.push({
-        id: groupBooks[0].id,
-        seriesKey: seriesKey,
-        books: groupBooks,
-      });
+      const manualBooksInGroup = groupBooks.filter(b => b.id.startsWith('manual-'));
+      const autoBooksInGroup = groupBooks.filter(b => !b.id.startsWith('manual-'));
+
+      if (manualBooksInGroup.length > 0) {
+        // 手動データがある場合：手動データを先頭にして固定し、自動データ部分のみをソートして結合
+        autoBooksInGroup.sort((a, b) => a.title.localeCompare(b.title));
+        const merged = [...manualBooksInGroup, ...autoBooksInGroup];
+        groupedResults.push({
+          id: merged[0].id,
+          seriesKey: seriesKey,
+          books: merged,
+        });
+      } else {
+        // 自動データのみの場合：全体をソート
+        groupBooks.sort((a, b) => a.title.localeCompare(b.title));
+        groupedResults.push({
+          id: groupBooks[0].id,
+          seriesKey: seriesKey,
+          books: groupBooks,
+        });
+      }
     });
 
     // 4. グループの並び替え (代表本またはグループ内最大値を基準にします)
