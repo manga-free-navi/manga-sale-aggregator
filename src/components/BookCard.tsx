@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 
 export interface Book {
   id: string;
@@ -60,6 +60,10 @@ export default function BookCard({ books }: BookCardProps) {
   // あらすじ展開ステート
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // あらすじDOM要素の参照と、はみ出し（見切れ）検知ステート
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
+  const [showReadMore, setShowReadMore] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -70,6 +74,24 @@ export default function BookCard({ books }: BookCardProps) {
       setCurrentBook(books[0]);
     }
   }, [books]);
+
+  // あらすじが実際にはみ出している（3行を超えている）かを検知する
+  useEffect(() => {
+    const checkOverflow = () => {
+      const el = descriptionRef.current;
+      if (el) {
+        // 非展開時のスクロール高さと表示高さを比較
+        const hasOverflow = el.scrollHeight > el.clientHeight;
+        setShowReadMore(hasOverflow);
+      }
+    };
+
+    // 初期チェックと、レンダリングラグを考慮した遅延チェック
+    checkOverflow();
+    const timer = setTimeout(checkOverflow, 100);
+    
+    return () => clearTimeout(timer);
+  }, [currentBook]);
 
   // セール終了までの残り日数を計算
   const remainingDaysText = useMemo(() => {
@@ -126,9 +148,6 @@ export default function BookCard({ books }: BookCardProps) {
         return { name: 'ストア', btnClass: '', action: '詳細を見る' };
     }
   }, [currentBook.store]);
-
-  // あらすじが長いかどうかの判定 (アコーディオンボタン表示用 - 100文字以上)
-  const isLongDescription = currentBook.description && currentBook.description.length > 100;
 
   return (
     <article className="book-card">
@@ -219,12 +238,13 @@ export default function BookCard({ books }: BookCardProps) {
         {/* あらすじ・キャンペーン説明 (アコーディオン開閉対応) */}
         <div className="description-wrapper">
           <p 
+            ref={descriptionRef}
             className={`book-description ${isExpanded ? 'expanded' : ''}`}
             title={isExpanded ? undefined : currentBook.description}
           >
             {currentBook.description}
           </p>
-          {isLongDescription && (
+          {showReadMore && (
             <button 
               onClick={() => setIsExpanded(!isExpanded)}
               className="read-more-btn"
