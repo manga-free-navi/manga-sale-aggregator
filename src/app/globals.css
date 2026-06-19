@@ -594,3 +594,119 @@ button, input, select {
   -webkit-text-fill-color: transparent;
   display: inline-block;
 }
+
+/* シリーズ集約用の追加スタイル */
+.series-count-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  background-color: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  align-self: flex-start;
+}
+
+.series-volumes-container {
+  margin-top: 5px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.series-volumes-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.volume-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 80px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* スクロールバーのカスタマイズ */
+.volume-badge-list::-webkit-scrollbar {
+  width: 4px;
+}
+.volume-badge-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+.volume-badge-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.volume-badge {
+  background-color: var(--bg-dark-700);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  white-space: nowrap;
+}
+
+.volume-badge:hover {
+  border-color: var(--accent-cyan);
+  color: var(--text-primary);
+}
+
+.volume-badge.active {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+/* あらすじアコーディオン用 */
+.description-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.book-description {
+  margin-bottom: 6px !important;
+  transition: var(--transition-smooth);
+}
+
+.book-description.expanded {
+  display: block !important;
+  height: auto !important;
+  max-height: 250px;
+  overflow-y: auto;
+  -webkit-line-clamp: unset !important;
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.read-more-btn {
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  align-self: flex-start;
+  transition: var(--transition-smooth);
+}
+
+.read-more-btn:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}

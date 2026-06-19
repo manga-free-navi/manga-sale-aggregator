@@ -20,29 +20,65 @@ export interface Book {
 }
 
 interface BookCardProps {
-  book: Book;
+  books: Book[]; // シリーズに属する本の配列
 }
 
 /**
- * 各漫画セール・無料キャンペーン情報を表示するカードコンポーネント
+ * タイトルから巻数やサブタイトルを簡易的に切り出すヘルパー
  */
-export default function BookCard({ book }: BookCardProps) {
-  // ハイドレーションエラーを防止するためのマウント確認ステート
+function getVolumeLabel(title: string, index: number): string {
+  const cleaned = title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '');
+  
+  // 末尾にある数字（巻数）を抽出
+  const numMatch = cleaned.match(/(?:[\s　]*|[\(（])([\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[）\)]?[\s　]*$/);
+  if (numMatch) {
+    return `${numMatch[1]}巻`;
+  }
+  
+  // 全角スペースや記号で区切られた後半部分をサブタイトルラベルとして取得
+  const splitters = ['　', ' - ', ' — ', '：', ':'];
+  for (const splitter of splitters) {
+    const parts = cleaned.split(splitter);
+    if (parts.length > 1 && parts[parts.length - 1].trim().length > 0) {
+      const sub = parts[parts.length - 1].trim();
+      return sub.length > 6 ? sub.substring(0, 5) + '..' : sub;
+    }
+  }
+  
+  return `${index + 1}巻`;
+}
+
+/**
+ * シリーズごとにまとめた漫画カードコンポーネント
+ */
+export default function BookCard({ books }: BookCardProps) {
   const [mounted, setMounted] = useState(false);
+  
+  // 現在選択されている巻（初期状態は最初の巻）
+  const [currentBook, setCurrentBook] = useState<Book>(books[0]);
+  
+  // あらすじ展開ステート
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // books の中身が変わった場合（検索やフィルタの再実行時など）に選択中の巻をリセット
+  useEffect(() => {
+    if (books.length > 0) {
+      setCurrentBook(books[0]);
+    }
+  }, [books]);
+
   // セール終了までの残り日数を計算
   const remainingDaysText = useMemo(() => {
-    // クライアント側でマウントされるまでは計算をスキップし、サーバーとクライアントでの時間差によるエラーを防ぐ
-    if (!book.endDate || !mounted) return null;
+    if (!currentBook.endDate || !mounted) return null;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const end = new Date(book.endDate);
+    const end = new Date(currentBook.endDate);
     end.setHours(0, 0, 0, 0);
 
     const diffTime = end.getTime() - today.getTime();
@@ -58,12 +94,12 @@ export default function BookCard({ book }: BookCardProps) {
       return `あと ${diffDays} 日`;
     }
     
-    return `${book.endDate} まで`;
-  }, [book.endDate, mounted]);
+    return `${currentBook.endDate} まで`;
+  }, [currentBook.endDate, mounted]);
 
-  // ストア情報（表示名、ボタン用クラス、アクションテキスト）の動的判定
+  // ストア情報の動的判定
   const storeInfo = useMemo(() => {
-    switch (book.store) {
+    switch (currentBook.store) {
       case 'amazon':
         return { name: 'Kindle', btnClass: 'btn-kindle', action: '買う・読む' };
       case 'rakuten':
@@ -89,22 +125,25 @@ export default function BookCard({ book }: BookCardProps) {
       default:
         return { name: 'ストア', btnClass: '', action: '詳細を見る' };
     }
-  }, [book.store]);
+  }, [currentBook.store]);
+
+  // あらすじが長いかどうかの判定 (アコーディオンボタン表示用)
+  const isLongDescription = currentBook.description && currentBook.description.length > 75;
 
   return (
     <article className="book-card">
-      {/* 割引率・無料バッジ */}
+      {/* 割引率・無料バッジ (選択中の巻に基づく) */}
       <div className="discount-tag">
-        {book.discountRate === 100 ? '無料公開' : `${book.discountRate}% OFF`}
+        {currentBook.discountRate === 100 ? '無料公開' : `${currentBook.discountRate}% OFF`}
       </div>
 
       {/* 表紙画像 */}
       <div className="card-image-wrapper">
-        {book.imageUrl ? (
+        {currentBook.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={book.imageUrl}
-            alt={`${book.title}の表紙`}
+            src={currentBook.imageUrl}
+            alt={`${currentBook.title}の表紙`}
             className="card-image"
             loading="lazy"
             referrerPolicy="no-referrer"
@@ -116,30 +155,76 @@ export default function BookCard({ book }: BookCardProps) {
 
       {/* コンテンツエリア */}
       <div className="card-content">
-        <span className="book-genre">{book.genre}</span>
-        <h3 className="book-title" title={book.title}>
-          {book.title}
+        <span className="book-genre">{currentBook.genre}</span>
+        
+        {/* シリーズ全体の件数バッジ */}
+        {books.length > 1 && (
+          <span className="series-count-badge">シリーズ他 {books.length - 1} 冊</span>
+        )}
+
+        <h3 className="book-title" title={currentBook.title}>
+          {currentBook.title}
         </h3>
-        <p className="book-author">{book.author}</p>
+        <p className="book-author">{currentBook.author}</p>
+
+        {/* シリーズ巻数切り替えUI (複数巻ある場合のみ表示) */}
+        {books.length > 1 && (
+          <div className="series-volumes-container">
+            <span className="series-volumes-label">巻・タイトル選択:</span>
+            <div className="volume-badge-list">
+              {books.map((b, index) => {
+                const isActive = b.id === currentBook.id;
+                const label = getVolumeLabel(b.title, index);
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => {
+                      setCurrentBook(b);
+                      // 巻が切り替わったらアコーディオンは閉じる
+                      setIsExpanded(false);
+                    }}
+                    className={`volume-badge ${isActive ? 'active' : ''}`}
+                    title={b.title}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 価格表示 */}
         <div className="price-container">
-          {book.salePrice === 0 ? (
+          {currentBook.salePrice === 0 ? (
             <span className="sale-price free">無料公開中</span>
           ) : (
-            <span className="sale-price">¥{book.salePrice.toLocaleString()}</span>
+            <span className="sale-price">¥{currentBook.salePrice.toLocaleString()}</span>
           )}
-          {book.originalPrice > 0 && book.salePrice !== book.originalPrice && (
-            <span className="original-price">¥{book.originalPrice.toLocaleString()}</span>
+          {currentBook.originalPrice > 0 && currentBook.salePrice !== currentBook.originalPrice && (
+            <span className="original-price">¥{currentBook.originalPrice.toLocaleString()}</span>
           )}
         </div>
 
-        {/* あらすじ・キャンペーン説明 */}
-        <p className="book-description" title={book.description}>
-          {book.description}
-        </p>
+        {/* あらすじ・キャンペーン説明 (アコーディオン開閉対応) */}
+        <div className="description-wrapper">
+          <p 
+            className={`book-description ${isExpanded ? 'expanded' : ''}`}
+            title={isExpanded ? undefined : currentBook.description}
+          >
+            {currentBook.description}
+          </p>
+          {isLongDescription && (
+            <button 
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="read-more-btn"
+            >
+              {isExpanded ? '閉じる ▲' : '続きを読む ▼'}
+            </button>
+          )}
+        </div>
 
-        {/* 下部メタ情報 (掲載ストア・終了期限など) */}
+        {/* 下部メタ情報 */}
         <div className="book-meta">
           <span>{storeInfo.name}</span>
           {mounted && remainingDaysText && (
@@ -148,7 +233,7 @@ export default function BookCard({ book }: BookCardProps) {
         </div>
 
         {/* アクションボタン */}
-        <a href={book.url} target="_blank" rel="noopener noreferrer">
+        <a href={currentBook.url} target="_blank" rel="noopener noreferrer">
           <button className={`card-button ${storeInfo.btnClass}`}>
             <span>{storeInfo.name} で{storeInfo.action}</span>
             <span style={{ fontSize: '0.8rem' }}>↗</span>

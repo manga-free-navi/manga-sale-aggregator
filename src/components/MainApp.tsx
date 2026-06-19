@@ -8,12 +8,43 @@ import BookCard, { Book } from './BookCard';
 import FilterBar from './FilterBar';
 import AdContainer from './AdContainer';
 
+interface SeriesGroup {
+  id: string; // 代表本ID
+  seriesKey: string; // シリーズ識別キー
+  books: Book[]; // シリーズに属する本の配列
+}
+
+/**
+ * タイトルからシリーズ名（ベースタイトル）を抽出するヘルパー
+ */
+function getSeriesKey(title: string): string {
+  // 1. 【期間限定無料】や【セール】などの前置タグを除去
+  let key = title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '');
+  
+  // 2. 巻数、または「X巻」「上・中・下」「前後」などを除去
+  key = key.replace(/[\s　]*(?:[\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[\s　]*$/, '');
+  key = key.replace(/[\s　]*[（(](?:[\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[）)][\s　]*$/, '');
+  key = key.replace(/[\s　]*第[\s　]*(?:[\d１２３４５６７８９０]+)[\s　]*[巻話冊]/, '');
+
+  // 3. 全角スペースや特定の記号で区切られた後半部（サブタイトルなど）を切り取る
+  const splitters = ['　', ' - ', ' — ', '：', ':'];
+  for (const splitter of splitters) {
+    const parts = key.split(splitter);
+    if (parts.length > 1 && parts[0].trim().length > 1) {
+      key = parts[0];
+      break;
+    }
+  }
+  
+  return key.trim();
+}
+
 export default function MainApp() {
   // 自動データと手動キャンペーンデータを結合
   const books = useMemo(() => {
     const autoList = (initialBooks || []) as Book[];
     const manualList = (manualBooks || []) as Book[];
-    return [...manualList, ...autoList]; // 手動割り込みデータを優先して上に表示させるため、先に結合します
+    return [...manualList, ...autoList];
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,8 +57,8 @@ export default function MainApp() {
     return Array.from(new Set(allGenres)).sort();
   }, [books]);
 
-  // 検索・フィルタリング・ソートの適用
-  const filteredAndSortedBooks = useMemo(() => {
+  // 検索・フィルタリング・グループ化・ソートの適用
+  const filteredAndSortedGroups = useMemo(() => {
     let result = [...books];
 
     // 1. キーワード検索 (タイトル or 著者名)
@@ -45,54 +76,94 @@ export default function MainApp() {
       result = result.filter((b) => b.genre === selectedGenre);
     }
 
-    // 3. 並び替え (安定ソートを保証するため、同一条件時は ID で順序を決定します)
-    result.sort((a, b) => {
-      // 手動キャンペーンID（jumpplusなど）を常に最上部に固定したい場合のルール
-      const isAManual = a.id.startsWith('manual-');
-      const isBManual = b.id.startsWith('manual-');
+    // 3. シリーズごとにグループ化
+    const groupsMap = new Map<string, Book[]>();
+    
+    result.forEach((book) => {
+      // 手動入力データはそれぞれ独立したキャンペーンであることが多いため、シリーズ集約の対象外にする
+      if (book.id.startsWith('manual-')) {
+        groupsMap.set(book.id, [book]);
+        return;
+      }
+      
+      const key = getSeriesKey(book.title);
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, []);
+      }
+      groupsMap.get(key)!.push(book);
+    });
+
+    const groupedResults: SeriesGroup[] = [];
+    groupsMap.forEach((groupBooks, seriesKey) => {
+      // グループ内の書籍をタイトルで昇順ソート（通常、巻数順に並ぶようにする）
+      groupBooks.sort((a, b) => a.title.localeCompare(b.title));
+      
+      // 最初の本（代表本）のIDをグループ全体のIDとする
+      groupedResults.push({
+        id: groupBooks[0].id,
+        seriesKey: seriesKey,
+        books: groupBooks,
+      });
+    });
+
+    // 4. グループの並び替え (代表本またはグループ内最大値を基準にします)
+    groupedResults.sort((a, b) => {
+      const repA = a.books[0];
+      const repB = b.books[0];
+
+      // 手動データを常に最上部に固定
+      const isAManual = repA.id.startsWith('manual-');
+      const isBManual = repB.id.startsWith('manual-');
       if (isAManual && !isBManual) return -1;
       if (!isAManual && isBManual) return 1;
 
       if (sortBy === 'discountDesc') {
-        // 割引率の高い順
-        if (b.discountRate !== a.discountRate) {
-          return b.discountRate - a.discountRate;
+        // グループ内での最大割引率を基準に降順ソート
+        const maxDiscountA = Math.max(...a.books.map(bk => bk.discountRate));
+        const maxDiscountB = Math.max(...b.books.map(bk => bk.discountRate));
+        if (maxDiscountB !== maxDiscountA) {
+          return maxDiscountB - maxDiscountA;
         }
-        return a.id.localeCompare(b.id);
+        return repA.id.localeCompare(repB.id);
       }
+      
       if (sortBy === 'priceAsc') {
-        // 価格の安い順
-        if (a.salePrice !== b.salePrice) {
-          return a.salePrice - b.salePrice;
+        // グループ内での最安価格を基準に昇順ソート
+        const minPriceA = Math.min(...a.books.map(bk => bk.salePrice));
+        const minPriceB = Math.min(...b.books.map(bk => bk.salePrice));
+        if (minPriceA !== minPriceB) {
+          return minPriceA - minPriceB;
         }
-        return a.id.localeCompare(b.id);
+        return repA.id.localeCompare(repB.id);
       }
+      
       if (sortBy === 'endDateAsc') {
-        // 終了日が近い順 (nullは後ろへ)
-        if (!a.endDate && b.endDate) return 1;
-        if (a.endDate && !b.endDate) return -1;
-        if (!a.endDate && !b.endDate) return a.id.localeCompare(b.id);
+        // 終了日が最も近いものを基準にソート (nullは後ろへ)
+        const datesA = a.books.map(bk => bk.endDate).filter(Boolean).map(d => new Date(d!).getTime());
+        const datesB = b.books.map(bk => bk.endDate).filter(Boolean).map(d => new Date(d!).getTime());
+        const minDateA = datesA.length > 0 ? Math.min(...datesA) : Infinity;
+        const minDateB = datesB.length > 0 ? Math.min(...datesB) : Infinity;
         
-        const timeA = new Date(a.endDate!).getTime();
-        const timeB = new Date(b.endDate!).getTime();
-        if (timeA !== timeB) {
-          return timeA - timeB;
+        if (minDateA !== minDateB) {
+          return minDateA - minDateB;
         }
-        return a.id.localeCompare(b.id);
+        return repA.id.localeCompare(repB.id);
       }
+      
       if (sortBy === 'newest') {
-        // データ更新順
-        const timeA = new Date(a.updatedAt).getTime();
-        const timeB = new Date(b.updatedAt).getTime();
-        if (timeA !== timeB) {
-          return timeB - timeA;
+        // グループ内の最新の更新日付を基準に降順ソート
+        const newestA = Math.max(...a.books.map(bk => new Date(bk.updatedAt).getTime()));
+        const newestB = Math.max(...b.books.map(bk => new Date(bk.updatedAt).getTime()));
+        if (newestA !== newestB) {
+          return newestB - newestA;
         }
-        return a.id.localeCompare(b.id);
+        return repA.id.localeCompare(repB.id);
       }
-      return a.id.localeCompare(b.id);
+      
+      return repA.id.localeCompare(repB.id);
     });
 
-    return result;
+    return groupedResults;
   }, [books, searchTerm, selectedGenre, sortBy]);
 
   return (
@@ -121,19 +192,19 @@ export default function MainApp() {
       <div className="main-layout">
         {/* 左側：漫画一覧領域 */}
         <div>
-          {filteredAndSortedBooks.length === 0 ? (
+          {filteredAndSortedGroups.length === 0 ? (
             <div className="empty-state">
               <h3>対象の漫画が見つかりませんでした</h3>
               <p>検索キーワードやフィルタ条件を変えてお試しください。</p>
             </div>
           ) : (
             <div className="book-grid">
-              {filteredAndSortedBooks.map((book, index) => {
+              {filteredAndSortedGroups.map((group, index) => {
                 // 3番目のカードの後にインライン広告を挟み込む（AdSense収益化用）
                 const insertAd = index === 2;
                 return (
-                  <div key={book.id} style={{ display: 'contents' }}>
-                    <BookCard book={book} />
+                  <div key={group.id} style={{ display: 'contents' }}>
+                    <BookCard books={group.books} />
                     {insertAd && (
                       <AdContainer slot="inline-ad-slot-1" type="inline" />
                     )}
