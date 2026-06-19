@@ -17,7 +17,7 @@ export default function RootLayout({
   const isRealAdsense = adsenseClient && adsenseClient !== 'ca-pub-XXXXXXXXXXXXXXXX';
 
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <head>
         {/* Google AdSenseスクリプトの非同期読み込み (本番ID設定時のみ) */}
         {isRealAdsense && (
