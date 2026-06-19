@@ -32,6 +32,17 @@ export default function AdContainer({
       return;
     }
 
+    // すでにスクリプトがロードされているか確認
+    const existingScript = document.getElementById('google-adsense-script');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.id = 'google-adsense-script';
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      document.head.appendChild(script);
+    }
+
     try {
       // AdSenseの初期化スクリプトを実行
       const adsbygoogle = (window as any).adsbygoogle || [];

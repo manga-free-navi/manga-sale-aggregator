@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,22 +12,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || '';
-  const isRealAdsense = adsenseClient && adsenseClient !== 'ca-pub-XXXXXXXXXXXXXXXX';
-
   return (
     <html lang="ja" suppressHydrationWarning>
-      <head>
-        {/* Google AdSenseスクリプトの非同期読み込み (本番ID設定時のみ) */}
-        {isRealAdsense && (
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
-      </head>
+      <head />
       <body>
         {/* ヘッダー領域 */}
         <header className="header">
