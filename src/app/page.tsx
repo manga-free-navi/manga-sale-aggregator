@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 // 自動収集データと、手動割り込みデータを両方インポートして結合します
 import initialBooks from '../data/sales.json';
 import manualBooks from '../data/manual_sales.json';
@@ -9,7 +9,13 @@ import FilterBar from '../components/FilterBar';
 import AdContainer from '../components/AdContainer';
 
 export default function Home() {
-  // 自動データと手動キャンペーンデータを結合 (ハイドレーション不一致を防ぐため useMemo を使用)
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 自動データと手動キャンペーンデータを結合
   const books = useMemo(() => {
     const autoList = (initialBooks || []) as Book[];
     const manualList = (manualBooks || []) as Book[];
@@ -20,7 +26,7 @@ export default function Home() {
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('discountDesc');
 
-  // 動的ジャンル一覧の抽出
+  // 動的ジャンル一覧の抽出 (順序を完全に一意にするため .sort() を追加)
   const genres = useMemo(() => {
     const allGenres = books.map((b) => b.genre).filter(Boolean);
     return Array.from(new Set(allGenres)).sort();
@@ -58,7 +64,6 @@ export default function Home() {
         if (b.discountRate !== a.discountRate) {
           return b.discountRate - a.discountRate;
         }
-        // 割引率が同じ場合、IDのアルファベット順で順番を固定 (ミスマッチクラッシュ防止)
         return a.id.localeCompare(b.id);
       }
       if (sortBy === 'priceAsc') {
@@ -96,6 +101,17 @@ export default function Home() {
     return result;
   }, [books, searchTerm, selectedGenre, sortBy]);
 
+  // サーバーサイド・マウント前（初回描画時）はローディングのみを返し、不一致エラー（React #418）を物理的に防ぎます
+  if (!mounted) {
+    return (
+      <div className="container" style={{ padding: '100px 20px', textAlign: 'center', minHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="logo" style={{ fontSize: '2rem', marginBottom: '20px' }}>無料＆激安セール漫画ナビ</div>
+        <p style={{ color: 'var(--text-secondary)' }}>最新のセール情報を読み込み中...</p>
+      </div>
+    );
+  }
+
+  // 以下はマウント後（ブラウザ側での実行時）のみ表示
   return (
     <div className="container" style={{ paddingTop: '20px' }}>
       {/* ヒーローセクション */}
@@ -145,11 +161,11 @@ export default function Home() {
           )}
         </div>
 
-        {/* 右側：サイドバー領域（AdSense広告などの掲載エリア） */}
+        {/* 右側：サイドバー領域 */}
         <aside>
           <AdContainer slot="sidebar-ad-slot-1" type="sidebar" />
           
-          {/* お役立ち情報等のエリア (SEO/AdSense対策用テキストコンテンツ) */}
+          {/* お役立ち情報等のエリア */}
           <div
             className="filter-container"
             style={{ marginTop: '20px', fontSize: '0.85rem' }}

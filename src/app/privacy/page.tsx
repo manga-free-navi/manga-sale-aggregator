@@ -1,14 +1,28 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-export const metadata = {
-  title: 'プライバシーポリシー・免責事項 | 無料＆激安セール漫画ナビ',
-  description: '無料＆激安セール漫画ナビのプライバシーポリシーおよび免責事項に関するページです。当サイトにおける広告配信（Google AdSense、アフィリエイト）や個人情報の取扱、免責範囲について記載しています。',
-};
-
 /**
- * AdSense合格に必須となるプライバシーポリシー・免責事項ページ
+ * プライバシーポリシーページ
+ * クライアントオンリーレンダリングを採用し、ハイドレーションエラーを確実に防ぎます。
  */
 export default function PrivacyPolicy() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // マウント前はローディング枠を返し、ハイドレーション時の不一致を防止
+  if (!mounted) {
+    return (
+      <div className="container" style={{ padding: '100px 20px', textAlign: 'center', minHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>ページを読み込み中...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container" style={{ paddingTop: '40px', paddingBottom: '60px', maxWidth: '800px' }}>
       <header style={{ marginBottom: '30px', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px' }}>
