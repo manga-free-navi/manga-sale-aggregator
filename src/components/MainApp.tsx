@@ -108,12 +108,21 @@ export default function MainApp() {
   // アニメ配信情報のフェッチ
   useEffect(() => {
     const fetchAnimeVideos = async () => {
-      const urls = [
-        '/youtube-free-anime-aggregator/videos.json',
-        '/anime-free/videos.json',
-        'https://masayuki-gemini.github.io/youtube-free-anime-aggregator/videos.json',
-        '/videos.json'
-      ];
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const envUrl = process.env.NEXT_PUBLIC_ANIME_SITE_URL || '';
+      const urls: string[] = [];
+      
+      if (envUrl) {
+        urls.push(`${envUrl.replace(/\/$/, '')}/videos.json`);
+      }
+      if (origin) {
+        urls.push(`${origin}/youtube-free-anime-aggregator/videos.json`);
+        urls.push(`${origin}/anime-free/videos.json`);
+      }
+      urls.push('/youtube-free-anime-aggregator/videos.json');
+      urls.push('/anime-free/videos.json');
+      urls.push('/videos.json');
+
       for (const url of urls) {
         try {
           const res = await fetch(url);
@@ -135,12 +144,21 @@ export default function MainApp() {
   // ゲームセール情報のフェッチ
   useEffect(() => {
     const fetchGameSales = async () => {
-      const urls = [
-        '/game-sale-aggregator/games.json',
-        '/game-sale-aggregator/data/games.json',
-        'https://masayuki-gemini.github.io/game-sale-aggregator/games.json',
-        '/games.json'
-      ];
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const envUrl = process.env.NEXT_PUBLIC_GAME_SITE_URL || '';
+      const urls: string[] = [];
+      
+      if (envUrl) {
+        urls.push(`${envUrl.replace(/\/$/, '')}/games.json`);
+      }
+      if (origin) {
+        urls.push(`${origin}/game-sale-aggregator/games.json`);
+        urls.push(`${origin}/game-sale-aggregator/data/games.json`);
+      }
+      urls.push('/game-sale-aggregator/games.json');
+      urls.push('/game-sale-aggregator/data/games.json');
+      urls.push('/games.json');
+
       for (const url of urls) {
         try {
           const res = await fetch(url);
@@ -151,7 +169,9 @@ export default function MainApp() {
               break;
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
       }
     };
     fetchGameSales();

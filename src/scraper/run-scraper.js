@@ -227,6 +227,19 @@ async function run() {
       }
 
       fs.writeFileSync(filePath, JSON.stringify(activeBooks, null, 2), 'utf-8');
+
+      // public/sales.json にも保存（他サイトからのクロスフェッチ用）
+      try {
+        const publicDir = path.join(__dirname, '../../public');
+        const publicFilePath = path.join(publicDir, 'sales.json');
+        if (!fs.existsSync(publicDir)) {
+          fs.mkdirSync(publicDir, { recursive: true });
+        }
+        fs.writeFileSync(publicFilePath, JSON.stringify(activeBooks, null, 2), 'utf-8');
+        console.log(`パブリックデータの書き込み完了: ${publicFilePath}`);
+      } catch (publicError) {
+        console.warn('パブリックディレクトリへのデータ書き込みに失敗しました:', publicError.message);
+      }
       
       console.log('====================================');
       console.log(`データの書き込み完了: ${filePath}`);
