@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://manga-free-navi.github.io/manga-sale-aggregator/sitemap.xml

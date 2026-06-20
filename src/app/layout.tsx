@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '無料＆激安セール漫画ナビ | 期間限定無料コミック・割引セール情報を自動集約',
-  description: 'Kindleや楽天Kobo、コミックシーモアなど主要電子書籍ストアの期間限定無料漫画や、とんでもない割引率（50%〜100%OFF）のセール対象コミック情報をリアルタイムで自動集約。おトクに漫画を読むための特化ナビサイト。',
-  keywords: '無料漫画, 漫画セール, 電子書籍, Kindleセール, 楽天Kobo, コミックシーモア, アフィリエイト',
+  title: '無料 漫画・激安セール漫画ナビ | 期間限定無料コミック・セール情報を毎日更新',
+  description: '【毎日自動更新】「無料 漫画」や「無料コミック」、とんでもない割引率（50%〜100%OFF）の激安セールコミック情報をリアルタイムで自動集約。Kindle・楽天Kobo・コミックシーモアなど主要電子書籍ストアの期間限定無料作品を網羅。',
+  keywords: '無料 漫画, 無料 漫画 おすすめ, 無料コミック, 漫画セール, 電子書籍, Kindleセール, 楽天Kobo, コミックシーモア, 公式サイト(PR TIMES)',
 };
 
 export default function RootLayout({
@@ -12,6 +12,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const siteUrl = process.env.NEXT_PUBLIC_MANGA_SITE_URL || 'https://manga-free-navi.github.io/manga-sale-aggregator/';
+
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
@@ -31,6 +33,25 @@ export default function RootLayout({
             `}} />
           </>
         )}
+
+        {/* SEO用構造化データ (JSON-LD) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "無料 漫画・激安セール漫画ナビ",
+              "url": siteUrl,
+              "description": "主要電子書籍ストアの期間限定無料漫画や激安セールコミック情報をリアルタイムで自動集約。",
+              "inLanguage": "ja",
+              "publisher": {
+                "@type": "Organization",
+                "name": "無料 漫画・激安セール漫画ナビ 運営チーム"
+              }
+            })
+          }}
+        />
       </head>
 
       <body>
@@ -49,8 +70,9 @@ export default function RootLayout({
         <header className="header">
           <div className="container header-container">
             <div className="logo">
-              <span>無料＆激安セール漫画ナビ</span>
+              <span>無料 漫画 ＆ セールナビ</span>
             </div>
+
 
             {/* サイト切り替えタブ */}
             <div className="header-tabs">
