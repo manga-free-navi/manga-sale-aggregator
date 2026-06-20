@@ -30,13 +30,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // 外部ドメイン（広告やGoogle Analyticsなど）への通信は、サービスワーカーでは介入せずスルーする
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(event.request).catch(() => {
-        // Offline fallback could be placed here if needed
+      return fetch(event.request).catch((err) => {
+        // 通信エラー発生時も、ブラウザがエラーを吐かないよう空のResponseオブジェクトを返す
+        return new Response('', { status: 408, statusText: 'Network Error' });
       });
     })
   );
