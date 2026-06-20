@@ -83,7 +83,7 @@ export default function RootLayout({
               >
                 <span>📺 無料アニメ</span>
               </a>
-              <a href="#" className="header-tab active">
+              <a href={siteUrl} className="header-tab active">
                 <span>📚 漫画セール</span>
               </a>
               <a 
@@ -96,7 +96,7 @@ export default function RootLayout({
             </div>
 
             <nav className="nav-links">
-              <a href="/" className="nav-link active">ホーム</a>
+              <a href={siteUrl} className="nav-link active">ホーム</a>
               <a href="#about" className="nav-link">サイトについて</a>
             </nav>
           </div>
