@@ -1,6 +1,9 @@
 name: Deploy to GitHub Pages
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # 毎日 AM 6:00 (UTC 21:00) に自動更新
     - cron: '0 21 * * *'
