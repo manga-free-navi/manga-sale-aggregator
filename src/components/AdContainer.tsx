@@ -72,22 +72,21 @@ export default function AdContainer({
     <div className={wrapperClass}>
       <span className="ad-label">Sponsor / 広告</span>
       {isDummyClient ? (
-        <div className="ad-placeholder">
-          {type === 'sidebar' ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p style={{ fontWeight: 'bold' }}>広告掲載エリア (300×250)</p>
-              <p style={{ fontSize: '0.75rem', marginTop: '8px', color: 'var(--text-secondary)' }}>
-                Google AdSenseの準備が整うとここにサイドバー広告が表示されます。
-              </p>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '10px' }}>
-              <p style={{ fontWeight: 'bold' }}>広告掲載エリア (インフィード/レスポンシブ)</p>
-              <p style={{ fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-secondary)' }}>
-                記事一覧の間に広告が挿入されます。
-              </p>
-            </div>
-          )}
+        <div className="ad-placeholder" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '15px 0', minHeight: type === 'sidebar' ? '250px' : '100px' }}>
+          {/* バリューコマース アフィリエイトバナー広告 */}
+          <a
+            href="https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=3773863&pid=892640994"
+            rel="nofollow"
+            target="_blank"
+            style={{ display: 'block', maxWidth: '100%', overflow: 'hidden' }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3773863&pid=892640994"
+              alt="Sponsor Ad"
+              style={{ display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+            />
+          </a>
         </div>
       ) : (
         <ins
