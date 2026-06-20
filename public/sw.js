@@ -1,8 +1,8 @@
 const CACHE_NAME = 'manga-sale-cache-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/manifest.json',
-  '/icon.svg'
+  './',
+  'manifest.json',
+  'icon.svg'
 ];
 
 self.addEventListener('install', (event) => {

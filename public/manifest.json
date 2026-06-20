@@ -2,20 +2,20 @@
   "name": "無料＆激安セール漫画ナビ",
   "short_name": "漫画セールナビ",
   "description": "期間限定無料マンガや割引セールコミックの最新情報を自動集約",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme-color": "#f97316",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "icon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
       "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "icon.svg",
       "type": "image/svg+xml",
       "sizes": "192x192 512x512",
       "purpose": "maskable"
