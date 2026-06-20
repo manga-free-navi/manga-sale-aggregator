@@ -17,8 +17,8 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="manifest" href="manifest.json" />
+        <link rel="apple-touch-icon" href="icon.svg" />
         <meta name="theme-color" content="#f97316" />
         
         {/* Google Analytics (GA4) */}
@@ -58,7 +58,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{__html: `
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').then(function(reg) {
+              navigator.serviceWorker.register('sw.js').then(function(reg) {
                 console.log('SW registered:', reg.scope);
               }).catch(function(err) {
                 console.error('SW registration failed:', err);
