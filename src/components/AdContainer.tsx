@@ -9,10 +9,11 @@ interface AdContainerProps {
   type?: 'sidebar' | 'inline';
 }
 
+// アドブロック検知結果のキャッシュ用変数（モジュールレベル）
+let isAdBlockDetectedCached: boolean | null = null;
+
 /**
- * Google AdSense用の広告コンポーネント
- * 広告コードがロードされるまでは、美しいプレースホルダーを表示してレイアウトシフトを防ぎます。
- * ハイドレーションミスマッチを防ぐため、マウントされるまでは静的なコンテナ枠のみを描画します。
+ * Google AdSenseおよびアフィリエイトバナー用広告コンポーネント（アドブロック自動回避・回遊バナー対応版）
  */
 export default function AdContainer({
   slot,
@@ -22,10 +23,60 @@ export default function AdContainer({
 }: AdContainerProps) {
   const [adLoaded, setAdLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isAdBlocked, setIsAdBlocked] = useState(false);
   const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || '';
 
   useEffect(() => {
     setMounted(true);
+
+    // アドブロック検知ロジック
+    const checkAdBlock = () => {
+      if (isAdBlockDetectedCached !== null) {
+        setIsAdBlocked(isAdBlockDetectedCached);
+        return;
+      }
+
+      // ダミー要素をDOMに配置してスタイルの非表示化をチェック
+      const dummy = document.createElement('div');
+      dummy.id = 'ad-placement-zone';
+      dummy.className = 'adsbygoogle adsbox ad-placement ad-content advertisement';
+      
+      // positionと座標のみ設定し、displayやsizeのインラインスタイルは指定しない（アドブロッカーの display: none !important を有効化）
+      dummy.style.position = 'absolute';
+      dummy.style.left = '-9999px';
+      dummy.style.top = '-9999px';
+      dummy.style.width = '10px';
+      dummy.style.height = '10px';
+      
+      document.body.appendChild(dummy);
+
+      // 反応時間を300msに延長し、アドブロッカーによるスタイル適用時間を確保
+      window.setTimeout(() => {
+        try {
+          const styles = window.getComputedStyle(dummy);
+          const isBlocked = styles.display === 'none' || 
+                            styles.visibility === 'hidden' || 
+                            dummy.offsetHeight === 0;
+          
+          if (dummy.parentNode) {
+            dummy.parentNode.removeChild(dummy);
+          }
+          
+          isAdBlockDetectedCached = isBlocked;
+          setIsAdBlocked(isBlocked);
+        } catch (e) {
+          isAdBlockDetectedCached = true;
+          setIsAdBlocked(true);
+        }
+      }, 300);
+    };
+
+    checkAdBlock();
+  }, []);
+
+  useEffect(() => {
+    // アドブロック検知時はAdSenseのロードをスキップ
+    if (isAdBlocked) return;
 
     // 開発中またはAdSense IDが未設定の場合は何もしない
     if (!adsenseClient || adsenseClient === 'ca-pub-XXXXXXXXXXXXXXXX') {
@@ -51,7 +102,7 @@ export default function AdContainer({
     } catch (err) {
       console.error('AdSenseの読み込みエラー:', err);
     }
-  }, [adsenseClient]);
+  }, [adsenseClient, isAdBlocked]);
 
   const wrapperClass = type === 'sidebar' ? 'ad-wrapper sidebar-ad' : 'ad-wrapper inline-ad';
 
@@ -65,7 +116,44 @@ export default function AdContainer({
     );
   }
 
-  // クライアントIDが未設定、またはダミーの場合は開発者用プレースホルダーを表示
+  // アドブロックが検知された場合の代替表示（プレミアム回遊バナー）
+  if (isAdBlocked) {
+    return (
+      <div className="promo-banner-card" id={`promo-banner-${slot}`}>
+        <div className="promo-banner-glow" />
+        <div className="promo-banner-inner">
+          <div className="promo-header">
+            <span className="promo-badge">RECOMMEND</span>
+            <h3 className="promo-title">姉妹サイトも毎日更新中！</h3>
+          </div>
+          <p className="promo-desc">
+            広告ブロッカーをご利用中の皆様へ。当サイトの姉妹サイト「ゲームセール」と「無料アニメ」情報ナビも、ぜひ合わせてお楽しみください！
+          </p>
+          <div className="promo-actions">
+            <a
+              href="https://manga-free-navi.github.io/game-sale-aggregator/"
+              className="promo-btn game-btn"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="btn-icon">🎮</span>
+              <span className="btn-text">ゲームセールナビ</span>
+            </a>
+            <a
+              href="https://manga-free-navi.github.io/youtube-free-anime-aggregator/"
+              className="promo-btn anime-btn"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="btn-icon">📺</span>
+              <span className="btn-text">無料アニメ配信ナビ</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isDummyClient = !adsenseClient || adsenseClient === 'ca-pub-XXXXXXXXXXXXXXXX';
 
   return (
@@ -84,6 +172,12 @@ export default function AdContainer({
             <img
               src="https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3773863&pid=892640994"
               alt="Sponsor Ad"
+              onError={() => {
+                // 万が一DOM検知をすり抜けてブロックされた場合、エラー発生時に検知して自己修復（回遊バナーへ切り替え）
+                console.log('Ad-block detected via image load failure. Switching to promo banner.');
+                isAdBlockDetectedCached = true;
+                setIsAdBlocked(true);
+              }}
               style={{ display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
             />
           </a>
