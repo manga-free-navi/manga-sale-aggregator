@@ -17,6 +17,14 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{__html: `
+          window.addEventListener('error', function(e) {
+            if (e.message && (e.message.indexOf('ChunkLoadError') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
+              console.warn('ChunkLoadError detected! Reloading page to fetch latest assets...');
+              window.location.reload();
+            }
+          }, true);
+        `}} />
         <link rel="manifest" href="manifest.json" />
         <link rel="apple-touch-icon" href="icon.svg" />
         <meta name="theme-color" content="#f97316" />
