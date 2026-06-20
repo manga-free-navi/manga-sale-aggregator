@@ -20,8 +20,16 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{__html: `
           window.addEventListener('error', function(e) {
             if (e.message && (e.message.indexOf('ChunkLoadError') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
-              console.warn('ChunkLoadError detected! Reloading page to fetch latest assets...');
-              window.location.reload();
+              var now = Date.now();
+              var lastReload = sessionStorage.getItem('last_chunk_error_reload');
+              // 10秒以内の連続リロードを防ぐ（無限ループ防止ガード）
+              if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+                sessionStorage.setItem('last_chunk_error_reload', now.toString());
+                console.warn('ChunkLoadErrorを検知しました。最新のアセットを取得するためページをリロードします...');
+                window.location.reload();
+              } else {
+                console.error('短時間に繰り返しChunkLoadErrorが発生したため、無限リロードを防ぐためにリロードを停止しました。');
+              }
             }
           }, true);
         `}} />
@@ -64,13 +72,18 @@ export default function RootLayout({
 
       <body>
         <script dangerouslySetInnerHTML={{__html: `
+          // キャッシュ干渉によるエラーを防ぐため、古いService Workerを強制解除する
           if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-              navigator.serviceWorker.register('sw.js').then(function(reg) {
-                console.log('SW registered:', reg.scope);
-              }).catch(function(err) {
-                console.error('SW registration failed:', err);
-              });
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for (var i = 0; i < registrations.length; i++) {
+                registrations[i].unregister().then(function(success) {
+                  if (success) {
+                    console.log('古いService Workerの登録を解除しました。');
+                  }
+                });
+              }
+            }).catch(function(err) {
+              console.error('Service Workerの登録解除に失敗しました:', err);
             });
           }
         `}} />
