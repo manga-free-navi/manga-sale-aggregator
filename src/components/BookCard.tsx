@@ -29,6 +29,10 @@ export interface Book {
 
 interface BookCardProps {
   books: Book[]; // シリーズに属する本の配列
+  animeVideos?: any[]; // アニメ配信情報リスト
+  gameSales?: any[]; // 関連ゲームセールデータ
+  rakutenSpu?: number; // 楽天SPU倍率
+  seimorCoupon?: number; // シーモア割引率
 }
 
 /**
@@ -59,7 +63,7 @@ function getVolumeLabel(title: string, index: number): string {
 /**
  * シリーズごとにまとめた漫画カードコンポーネント（複数ストア価格比較・既読しおり機能付き）
  */
-export default function BookCard({ books }: BookCardProps) {
+export default function BookCard({ books, animeVideos = [], gameSales = [], rakutenSpu = 10, seimorCoupon = 0 }: BookCardProps) {
   const [mounted, setMounted] = useState(false);
   
   // 現在選択されている巻（初期状態は最初の巻）
@@ -74,7 +78,12 @@ export default function BookCard({ books }: BookCardProps) {
 
   // 既読ステート
   const [isRead, setIsRead] = useState(false);
+  const [readCount, setReadCount] = useState(0);
   const [copied, setCopied] = useState(false);
+
+  // アニメツールチップ表示ステート
+  const [showAnimeTooltip, setShowAnimeTooltip] = useState(false);
+  const [showGameTooltip, setShowGameTooltip] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -87,13 +96,86 @@ export default function BookCard({ books }: BookCardProps) {
     }
   }, [books]);
 
-  // localStorage から既読ステートを取得
+  // localStorage から既読ステートおよび既読数を取得
   useEffect(() => {
     if (mounted) {
       const readList = JSON.parse(localStorage.getItem('manga_read_list') || '[]');
       setIsRead(readList.includes(currentBook.id));
+      
+      const count = books.filter(b => readList.includes(b.id)).length;
+      setReadCount(count);
     }
-  }, [currentBook.id, mounted]);
+  }, [currentBook.id, books, mounted, isRead]);
+
+  // アニメ配信中情報のマッチング
+  const matchedAnime = useMemo(() => {
+    if (!animeVideos || animeVideos.length === 0) return null;
+    
+    const clean = (t: string) => {
+      return t.replace(/【[^】]*】/g, '')
+              .replace(/\[[^\]]*\]/g, '')
+              .replace(/[\s　]+/g, '')
+              .toLowerCase();
+    };
+    
+    const bookTitleClean = clean(currentBook.title);
+    const baseTitleClean = clean(books[0].title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '').replace(/[\s　]*(?:[\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[\s　]*$/, ''));
+    
+    for (const video of animeVideos) {
+      const animeTitle = clean(video.title || '');
+      const originalTitle = clean(video.originalWorkTitle || '');
+      
+      if (
+        (animeTitle && (bookTitleClean.includes(animeTitle) || animeTitle.includes(baseTitleClean))) ||
+        (originalTitle && (bookTitleClean.includes(originalTitle) || originalTitle.includes(baseTitleClean)))
+      ) {
+        return video;
+      }
+    }
+    return null;
+  }, [animeVideos, currentBook.title, books]);
+
+  // 関連ゲームセールのマッチング
+  const matchedGame = useMemo(() => {
+    if (!gameSales || gameSales.length === 0) return null;
+    
+    const clean = (t: string) => {
+      return t.replace(/【[^】]*】/g, '')
+              .replace(/\[[^\]]*\]/g, '')
+              .replace(/[\s　]+/g, '')
+              .toLowerCase();
+    };
+    
+    const bookTitleClean = clean(currentBook.title);
+    const baseTitleClean = clean(books[0].title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '').replace(/[\s　]*(?:[\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[\s　]*$/, ''));
+    
+    for (const game of gameSales) {
+      const gameTitle = clean(game.title || '');
+      if (gameTitle && (bookTitleClean.includes(gameTitle) || gameTitle.includes(baseTitleClean) || baseTitleClean.includes(gameTitle))) {
+        return game;
+      }
+    }
+    return null;
+  }, [gameSales, currentBook.title, books]);
+
+  const handleGameBadgeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (matchedGame) {
+      // ゲームナビへの直行リンク
+      const searchUrl = `https://masayuki-gemini.github.io/game-sale-aggregator/?search=${encodeURIComponent(matchedGame.title)}`;
+      window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleAnimeBadgeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (matchedAnime) {
+      const searchTitle = matchedAnime.originalWorkTitle || matchedAnime.title;
+      // アニフリーサイトへのリンク (検索パラメータ付き)
+      const searchUrl = `https://masayuki-gemini.github.io/youtube-free-anime-aggregator/?search=${encodeURIComponent(searchTitle.replace(/\s+/g, ''))}`;
+      window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   // あらすじが実際にはみ出している（3行を超えている）かを検知する
   useEffect(() => {
@@ -123,6 +205,7 @@ export default function BookCard({ books }: BookCardProps) {
       newList = [...readList, currentBook.id];
     }
     localStorage.setItem('manga_read_list', JSON.stringify(newList));
+    localStorage.setItem('manga_favorites', JSON.stringify(newList)); // アニフリー共有用にも保存！
     setIsRead(!isRead);
     
     // MainAppコンポーネントに既読状態が更新されたことを通知するイベントを発火
@@ -267,6 +350,131 @@ export default function BookCard({ books }: BookCardProps) {
       <div className="card-content">
         <span className="book-genre">{currentBook.genre}</span>
         
+        {matchedAnime && (
+          <div className="anime-sync-badge" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: '#ffffff',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            padding: '0.2rem 0.5rem',
+            borderRadius: '4px',
+            marginLeft: '0.5rem',
+            verticalAlign: 'middle',
+            cursor: 'pointer',
+            position: 'relative'
+          }}
+            onMouseEnter={() => setShowAnimeTooltip(true)}
+            onMouseLeave={() => setShowAnimeTooltip(false)}
+            onClick={handleAnimeBadgeClick}
+            id={`anime-badge-${currentBook.id}`}
+          >
+            📺 アニメ無料配信中！
+            
+            {showAnimeTooltip && (
+              <div className="anime-tooltip" style={{
+                position: 'absolute',
+                bottom: '125%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: '#1e293b',
+                border: '1px solid rgba(255,255,255,0.1)',
+                padding: '0.5rem 0.75rem',
+                borderRadius: '8px',
+                width: '220px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+                zIndex: 50,
+                color: '#f8fafc',
+                fontSize: '0.7rem',
+                fontWeight: 400,
+                lineHeight: '1.4',
+                pointerEvents: 'none',
+                textAlign: 'left'
+              }}>
+                <div style={{ fontWeight: 700, color: '#34d399', marginBottom: '0.25rem' }}>
+                  {matchedAnime.channelName}で無料配信中！
+                </div>
+                <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                  {matchedAnime.title}
+                </div>
+                <div style={{ color: '#94a3b8', marginTop: '0.25rem' }}>
+                  ※クリックでアニフリーへ移動します
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {matchedGame && (
+          <div className="game-sync-badge" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+            color: '#ffffff',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            padding: '0.2rem 0.5rem',
+            borderRadius: '4px',
+            marginLeft: '0.5rem',
+            verticalAlign: 'middle',
+            cursor: 'pointer',
+            position: 'relative'
+          }}
+            onMouseEnter={() => setShowGameTooltip(true)}
+            onMouseLeave={() => setShowGameTooltip(false)}
+            onClick={handleGameBadgeClick}
+            id={`game-badge-${currentBook.id}`}
+          >
+            🎮 関連ゲームセール中！
+            
+            {showGameTooltip && (
+              <div className="game-tooltip" style={{
+                position: 'absolute',
+                bottom: '125%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: '#0f172a',
+                border: '1px solid rgba(59,130,246,0.3)',
+                padding: '0.6rem 0.8rem',
+                borderRadius: '8px',
+                width: '230px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 0 10px rgba(59,130,246,0.2)',
+                zIndex: 50,
+                color: '#f8fafc',
+                fontSize: '0.7rem',
+                fontWeight: 400,
+                lineHeight: '1.4',
+                pointerEvents: 'none',
+                textAlign: 'left'
+              }}>
+                <div style={{ fontWeight: 700, color: '#60a5fa', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <span>🎮</span> 関連ゲームお得情報
+                </div>
+                <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 600, marginBottom: '0.2rem' }}>
+                  {matchedGame.title}
+                </div>
+                <div>
+                  価格: <strong style={{ color: '#fff' }}>{matchedGame.salePrice}</strong>
+                  {matchedGame.discountRate && (
+                    <strong style={{ color: '#39ff14', marginLeft: '0.4rem' }}>({matchedGame.discountRate}% OFF)</strong>
+                  )}
+                </div>
+                {matchedGame.reviewScoreDesc && (
+                  <div style={{ color: '#818cf8', fontSize: '0.65rem', marginTop: '0.15rem' }}>
+                    評価: {matchedGame.reviewScoreDesc} ({matchedGame.reviewPercent}%)
+                  </div>
+                )}
+                <div style={{ color: '#94a3b8', marginTop: '0.4rem', fontSize: '0.65rem' }}>
+                  ※クリックでゲームセールナビへ移動します
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* シリーズ全体の件数バッジ */}
         {books.length > 1 && (
           <span className="series-count-badge">シリーズ他 {books.length - 1} 冊</span>
@@ -275,6 +483,19 @@ export default function BookCard({ books }: BookCardProps) {
         <h3 className="book-title" title={currentBook.title}>
           {currentBook.title}
         </h3>
+        
+        {/* シリーズ既読進捗バー */}
+        {books.length > 1 && mounted && (
+          <div className="read-progress-container" style={{ margin: '0.6rem 0', padding: '0.4rem 0.6rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+              <span>📖 シリーズ既読進捗:</span>
+              <span>{readCount} / {books.length} 巻 ({Math.round((readCount / books.length) * 100)}%)</span>
+            </div>
+            <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: `${(readCount / books.length) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #39ff14 0%, #00f2fe 100%)', transition: 'width 0.3s ease' }} />
+            </div>
+          </div>
+        )}
         <p className="book-author">{currentBook.author}</p>
 
         {/* シリーズ巻数切り替えUI (複数巻ある場合のみ表示) */}
@@ -412,11 +633,32 @@ export default function BookCard({ books }: BookCardProps) {
 
         {/* 電子ストア別の価格比較・リンクエリア */}
         <div className="store-compare-container" style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontWeight: 700 }}>各電子ストアで読む・比較:</div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontWeight: 700 }}>
+            <span>各電子ストアで読む・比較:</span>
+            <span style={{ color: '#34d399' }}>※実質価格シミュレータ反映中</span>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             {Object.entries(currentBook.stores).map(([storeKey, deal]) => {
               if (!deal) return null;
               const info = getStoreInfo(storeKey);
+              
+              // 実質価格シミュレーションの計算
+              let realPrice = deal.salePrice;
+              let discountDetail = '';
+              if (deal.salePrice > 0) {
+                if (storeKey === 'rakuten') {
+                  // 楽天SPU (ポイント還元)
+                  const returnPoints = Math.round(deal.salePrice * (rakutenSpu / 100));
+                  realPrice = Math.max(0, deal.salePrice - returnPoints);
+                  discountDetail = ` (${rakutenSpu}%還元 -¥${returnPoints})`;
+                } else if (storeKey === 'seimor' && seimorCoupon > 0) {
+                  // シーモア割引クーポン
+                  const couponDiscount = Math.round(deal.salePrice * (seimorCoupon / 100));
+                  realPrice = Math.max(0, deal.salePrice - couponDiscount);
+                  discountDetail = ` (クーポン${seimorCoupon}%引 -¥${couponDiscount})`;
+                }
+              }
+
               return (
                 <a key={storeKey} href={deal.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                   <button 
@@ -432,11 +674,17 @@ export default function BookCard({ books }: BookCardProps) {
                     }}
                     id={`btn-store-${storeKey}-${currentBook.id}`}
                   >
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>
-                      {info.name} で{info.action}
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', lineHeight: '1.2' }}>
+                      <span>{info.name} で{info.action}</span>
+                      {discountDetail && (
+                        <span style={{ fontSize: '0.6rem', fontWeight: 400, color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>{discountDetail}</span>
+                      )}
                     </span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                      {deal.salePrice === 0 ? '無料' : `¥${deal.salePrice.toLocaleString()}`} ↗
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textAlign: 'right', display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
+                      <span>{deal.salePrice === 0 ? '無料' : `¥${deal.salePrice.toLocaleString()}`} ↗</span>
+                      {realPrice !== deal.salePrice && deal.salePrice > 0 && (
+                        <span style={{ fontSize: '0.65rem', color: '#39ff14', fontWeight: 800, marginTop: '2px' }}>実質 ¥{realPrice.toLocaleString()}</span>
+                      )}
                     </span>
                   </button>
                 </a>

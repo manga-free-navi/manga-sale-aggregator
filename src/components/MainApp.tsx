@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-// 自動収集データと、手動割り込みデータを両方インポートして結合します
+// 自動収集データと、手動キャンペーンデータを両方インポートして結合します
 import initialBooks from '../data/sales.json';
 import manualBooks from '../data/manual_sales.json';
 import BookCard, { Book, StoreDeal } from './BookCard';
 import FilterBar from './FilterBar';
 import AdContainer from './AdContainer';
+import LazyRender from './LazyRender';
 
 interface SeriesGroup {
   id: string; // 代表本ID
@@ -23,7 +24,7 @@ function getSeriesKey(title: string): string {
   
   // 2. 巻数、または「X巻」「上・中・下」「前後」などを除去
   key = key.replace(/[\s　]*(?:[\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[\s　]*$/, '');
-  key = key.replace(/[\s　]*[（(](?:[\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[）)][\s　]*$/, '');
+  key = key.replace(/[\s　]*[（(](?:[\d１２３４５6７８９０]+|上|中|下|前|後)[巻話冊部]?[）)][\s　]*$/, '');
   key = key.replace(/[\s　]*第[\s　]*(?:[\d１２３４５６７８９０]+)[\s　]*[巻話冊]/, '');
 
   // 3. 全角スペースや特定の記号で区切られた後半部（サブタイトルなど）を切り取る
@@ -90,16 +91,138 @@ export default function MainApp() {
   const [hideRead, setHideRead] = useState(false);
   const [readList, setReadList] = useState<string[]>([]);
 
+  // 同期コード管理ステート
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncCodeInput, setSyncCodeInput] = useState('');
+  const [syncError, setSyncError] = useState('');
+  const [syncSuccess, setSyncSuccess] = useState(false);
+
+  // 3Way・テーマ・表示モード用ステート
+  const [theme, setTheme] = useState('dark');
+  const [viewMode, setViewMode] = useState<'grid' | 'gallery'>('grid');
+  const [rakutenSpu, setRakutenSpu] = useState(10);
+  const [seimorCoupon, setSeimorCoupon] = useState(0);
+  const [animeVideos, setAnimeVideos] = useState<any[]>([]);
+  const [gameSales, setGameSales] = useState<any[]>([]);
+
+  // アニメ配信情報のフェッチ
+  useEffect(() => {
+    const fetchAnimeVideos = async () => {
+      const urls = [
+        '/youtube-free-anime-aggregator/videos.json',
+        '/anime-free/videos.json',
+        'https://masayuki-gemini.github.io/youtube-free-anime-aggregator/videos.json',
+        '/videos.json'
+      ];
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              setAnimeVideos(data);
+              break;
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+    fetchAnimeVideos();
+  }, []);
+
+  // ゲームセール情報のフェッチ
+  useEffect(() => {
+    const fetchGameSales = async () => {
+      const urls = [
+        '/game-sale-aggregator/games.json',
+        '/game-sale-aggregator/data/games.json',
+        'https://masayuki-gemini.github.io/game-sale-aggregator/games.json',
+        '/games.json'
+      ];
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              setGameSales(data);
+              break;
+            }
+          }
+        } catch (e) {}
+      }
+    };
+    fetchGameSales();
+  }, []);
+
+  // お気に入りをBase64コード化して出力 (同期用)
+  const readListCode = useMemo(() => {
+    try {
+      return btoa(JSON.stringify(readList));
+    } catch (e) {
+      return '';
+    }
+  }, [readList]);
+
+  // 同期コードからお気に入りを復元 (インポート)
+  const handleImportReadList = () => {
+    setSyncError('');
+    setSyncSuccess(false);
+    try {
+      const trimmed = syncCodeInput.trim();
+      if (!trimmed) {
+        setSyncError('同期コードを入力してください。');
+        return;
+      }
+      const parsed = JSON.parse(atob(trimmed));
+      if (!Array.isArray(parsed)) {
+        setSyncError('無効な同期コード形式です。');
+        return;
+      }
+      // 重複を排除してマージ
+      const merged = Array.from(new Set([...readList, ...parsed]));
+      setReadList(merged);
+      localStorage.setItem('manga_read_list', JSON.stringify(merged));
+      localStorage.setItem('manga_favorites', JSON.stringify(merged)); // アニフリー連携用にも保存
+      
+      setSyncSuccess(true);
+      setSyncCodeInput('');
+      
+      // イベント発火して他コンポーネントへ通知
+      window.dispatchEvent(new Event('readListUpdated'));
+      
+      setTimeout(() => {
+        setShowSyncModal(false);
+        setSyncSuccess(false);
+      }, 1500);
+    } catch (e) {
+      setSyncError('コードの解析に失敗しました。正しいコードを入力してください。');
+    }
+  };
+
   // 閲覧設定の初期復元
   useEffect(() => {
     try {
       const savedGenre = localStorage.getItem('manga_filter_genre');
       const savedSort = localStorage.getItem('manga_sort_by');
       const savedHideRead = localStorage.getItem('manga_hide_read');
+      const savedTheme = localStorage.getItem('manga-theme') || 'dark';
+      const savedViewMode = localStorage.getItem('manga-view-mode') || 'grid';
+      const savedSpu = localStorage.getItem('manga-spu');
+      const savedCoupon = localStorage.getItem('manga-coupon');
       
       if (savedGenre) setSelectedGenre(savedGenre);
       if (savedSort) setSortBy(savedSort);
       if (savedHideRead) setHideRead(savedHideRead === 'true');
+      
+      setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      setViewMode(savedViewMode as 'grid' | 'gallery');
+      if (savedSpu) setRakutenSpu(parseInt(savedSpu));
+      if (savedCoupon) setSeimorCoupon(parseInt(savedCoupon));
     } catch (e) {
       console.error('Failed to load manga preferences:', e);
     }
@@ -125,6 +248,28 @@ export default function MainApp() {
     try {
       localStorage.setItem('manga_hide_read', String(hide));
     } catch (e) { console.error(e); }
+  };
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('manga-theme', newTheme);
+  };
+
+  const handleSetViewMode = (mode: 'grid' | 'gallery') => {
+    setViewMode(mode);
+    localStorage.setItem('manga-view-mode', mode);
+  };
+
+  const handleSpuChange = (val: number) => {
+    setRakutenSpu(val);
+    localStorage.setItem('manga-spu', String(val));
+  };
+
+  const handleCouponChange = (val: number) => {
+    setSeimorCoupon(val);
+    localStorage.setItem('manga-coupon', String(val));
   };
 
   // 既読状態の同期（LocalStorageの監視）
@@ -264,11 +409,11 @@ export default function MainApp() {
         return repA.id.localeCompare(repB.id);
       }
       
-      return repA.id.localeCompare(repB.id);
+      return 0;
     });
 
     return groupedResults;
-  }, [books, searchTerm, selectedGenre, sortBy]);
+  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList]);
 
   return (
     <div className="container" style={{ paddingTop: '20px' }}>
@@ -281,6 +426,88 @@ export default function MainApp() {
         </p>
       </section>
 
+      {/* 操作バー (表示モード・テーマ切り替え・同期) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        {/* 左側：表示モード切り替え */}
+        <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(255, 255, 255, 0.02)', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(255,255,255,0.1))' }}>
+          <button
+            onClick={() => handleSetViewMode('grid')}
+            style={{
+              background: viewMode === 'grid' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              border: 'none',
+              color: viewMode === 'grid' ? 'var(--text-main)' : 'var(--text-secondary)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              padding: '0.35rem 0.75rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            通常グリッド
+          </button>
+          <button
+            onClick={() => handleSetViewMode('gallery')}
+            style={{
+              background: viewMode === 'gallery' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              border: 'none',
+              color: viewMode === 'gallery' ? 'var(--text-main)' : 'var(--text-secondary)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              padding: '0.35rem 0.75rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            ジャケ買いギャラリー
+          </button>
+        </div>
+
+        {/* 右側：同期＆テーマ切り替え */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+              color: 'var(--text-secondary)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              padding: '0.45rem 0.95rem',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.2s',
+              backdropFilter: 'blur(5px)'
+            }}
+          >
+            {theme === 'dark' ? 'ライトネオン' : 'ダークネオン'}
+          </button>
+          <button
+            onClick={() => setShowSyncModal(true)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+              color: 'var(--text-secondary)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              padding: '0.45rem 0.95rem',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.2s',
+              backdropFilter: 'blur(5px)'
+            }}
+          >
+            同期・バックアップ
+          </button>
+        </div>
+      </div>
 
       {/* 検索・フィルタバー */}
       <FilterBar
@@ -313,20 +540,99 @@ export default function MainApp() {
       {/* メインレイアウト */}
       <div className="main-layout">
         {/* 左側：漫画一覧領域 */}
-        <div>
+        <div style={{ flex: 1 }}>
           {filteredAndSortedGroups.length === 0 ? (
             <div className="empty-state">
               <h3>対象の漫画が見つかりませんでした</h3>
               <p>検索キーワードやフィルタ条件を変えてお試しください。</p>
             </div>
           ) : (
-            <div className="book-grid">
+            <div className={viewMode === 'gallery' ? "book-gallery-grid" : "book-grid"}>
               {filteredAndSortedGroups.map((group, index) => {
                 // 3番目のカードの後にインライン広告を挟み込む（AdSense収益化用）
                 const insertAd = index === 2;
                 return (
                   <div key={group.id} style={{ display: 'contents' }}>
-                    <BookCard books={group.books} />
+                    <LazyRender>
+                      {viewMode === 'gallery' ? (
+                        <div 
+                          className="gallery-card" 
+                          style={{
+                            position: 'relative',
+                            aspectRatio: '2/3',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1px solid var(--border-color)',
+                            background: 'var(--bg-card)',
+                            boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onClick={() => {
+                            // クリック時は代表電子ストアに遷移
+                            const repBook = group.books[0];
+                            const firstStoreKey = Object.keys(repBook.stores)[0];
+                            const storeUrl = repBook.stores[firstStoreKey]?.url || '';
+                            if (storeUrl) window.open(storeUrl, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={group.books[0].imageUrl} 
+                            alt={group.books[0].title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            loading="lazy"
+                          />
+                          <div 
+                            className="gallery-overlay" 
+                            style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              background: 'linear-gradient(to top, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.4) 80%, transparent 100%)',
+                              padding: '1.25rem 0.75rem 0.75rem 0.75rem',
+                              color: '#fff',
+                              opacity: 0,
+                              transition: 'opacity 0.3s ease',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'flex-end',
+                              height: '100%',
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            <div style={{ display: 'flex', gap: '4px', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.6rem', background: '#e11d48', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                                {Math.max(...group.books.map(b => getBookMaxDiscount(b)))}% OFF
+                              </span>
+                              {group.books.length > 1 && (
+                                <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                  他 {group.books.length - 1}冊
+                                </span>
+                              )}
+                            </div>
+                            <h4 style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 0.2rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                              {group.books[0].title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '')}
+                            </h4>
+                            <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0 0 0.5rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                              {group.books[0].author}
+                            </p>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#39ff14' }}>
+                              ¥{Math.min(...group.books.map(b => getBookMinPrice(b))).toLocaleString()}〜
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <BookCard 
+                          books={group.books} 
+                          animeVideos={animeVideos} 
+                          gameSales={gameSales}
+                          rakutenSpu={rakutenSpu}
+                          seimorCoupon={seimorCoupon}
+                        />
+                      )}
+                    </LazyRender>
                     {insertAd && (
                       <AdContainer slot="inline-ad-slot-1" type="inline" />
                     )}
@@ -340,6 +646,58 @@ export default function MainApp() {
         {/* 右側：サイドバー領域 */}
         <aside>
           <AdContainer slot="sidebar-ad-slot-1" type="sidebar" />
+          
+          {/* 実質価格シミュレータ */}
+          <div className="filter-container" style={{ marginTop: '20px', fontSize: '0.85rem' }}>
+            <h4 style={{ marginBottom: '10px', color: 'var(--accent-cyan, #06b6d4)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              実質価格シミュレータ
+            </h4>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.75rem', lineHeight: '1.4' }}>
+              ポイント還元や割引クーポンを適用した後の「実質おトク価格」を自動計算します。
+            </p>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                楽天SPU倍率: <strong>{rakutenSpu}%還元</strong>
+              </label>
+              <input 
+                type="range" 
+                min="0" 
+                max="16" 
+                value={rakutenSpu} 
+                onChange={(e) => handleSpuChange(parseInt(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>※通常還元＋各種SPU倍率を入力</span>
+            </div>
+
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                シーモア割引クーポン: <strong>{seimorCoupon}% OFF</strong>
+              </label>
+              <select 
+                value={seimorCoupon}
+                onChange={(e) => handleCouponChange(parseInt(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '0.4rem',
+                  background: 'rgba(10, 15, 26, 0.8)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  color: 'var(--text-main)',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="0">適用なし (0%)</option>
+                <option value="10">10% OFF クーポン</option>
+                <option value="20">20% OFF クーポン</option>
+                <option value="30">30% OFF クーポン</option>
+                <option value="50">50% OFF クーポン</option>
+                <option value="70">70% OFF クーポン</option>
+              </select>
+            </div>
+          </div>
           
           {/* お役立ち情報等のエリア */}
           <div
@@ -362,6 +720,154 @@ export default function MainApp() {
           </div>
         </aside>
       </div>
+
+      {/* 同期モーダル */}
+      {showSyncModal && (
+        <div className="modal-backdrop" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 100,
+          padding: '1rem',
+          boxSizing: 'border-box'
+        }} onClick={() => setShowSyncModal(false)}>
+          <div className="modal-content" style={{
+            background: 'rgba(30, 41, 59, 0.9)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px',
+            padding: '2rem',
+            width: '100%',
+            maxWidth: '480px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            color: '#e2e8f0',
+            backdropFilter: 'blur(20px)',
+            position: 'relative',
+            boxSizing: 'border-box'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
+              お気に入り既読データの同期・移行
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              このコードをコピペすることで、他のブラウザやスマホとお気に入り既読状態を同期したり、バックアップを取ることができます。
+            </p>
+
+            {/* エクスポートコード */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
+                あなたのお気に入り同期コード (コピー用):
+              </label>
+              <textarea
+                readOnly
+                value={readListCode}
+                onClick={(e) => {
+                  const el = e.currentTarget;
+                  el.select();
+                  navigator.clipboard.writeText(readListCode);
+                }}
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  background: 'rgba(15, 23, 42, 0.4)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: '#a7f3d0',
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem',
+                  padding: '0.5rem',
+                  boxSizing: 'border-box',
+                  resize: 'none',
+                  cursor: 'pointer'
+                }}
+                title="クリックで全選択コピー"
+              />
+              <span style={{ fontSize: '0.7rem', color: '#10b981', display: 'block', marginTop: '0.2rem' }}>
+                ※クリックすると全選択され、クリップボードにコピーされます。
+              </span>
+            </div>
+
+            {/* インポート入力 */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
+                同期コードをインポート (貼り付け用):
+              </label>
+              <textarea
+                placeholder="ここに同期コードを貼り付けてください..."
+                value={syncCodeInput}
+                onChange={(e) => setSyncCodeInput(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  background: 'rgba(15, 23, 42, 0.2)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem',
+                  padding: '0.5rem',
+                  boxSizing: 'border-box',
+                  resize: 'none'
+                }}
+              />
+            </div>
+
+            {/* エラー／成功メッセージ */}
+            {syncError && (
+              <div style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '1rem', fontWeight: 600 }}>
+                ⚠️ {syncError}
+              </div>
+            )}
+            {syncSuccess && (
+              <div style={{ color: '#10b981', fontSize: '0.8rem', marginBottom: '1rem', fontWeight: 600 }}>
+                ✅ 同期に成功しました！
+              </div>
+            )}
+
+            {/* アクションボタン */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowSyncModal(false);
+                  setSyncError('');
+                  setSyncCodeInput('');
+                }}
+                style={{
+                  background: 'none',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'var(--text-secondary)',
+                  padding: '0.5rem 1.25rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem'
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleImportReadList}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: 700
+                }}
+              >
+                インポート実行
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

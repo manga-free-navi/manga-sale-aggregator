@@ -13,7 +13,8 @@ const { parsePrtimes } = require('./parsers/prtimes');
 async function run() {
   console.log('====================================');
   // 日本標準時 (JST) で現在日時を出力
-  console.log(`スクレイパー開始: ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`);
+  const jstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+  console.log(`スクレイパー開始: ${jstNow.toISOString().replace('T', ' ').substring(0, 19)} (JST)`);
   console.log('====================================');
 
   // 環境変数から各種設定を取得
@@ -27,30 +28,125 @@ async function run() {
     console.log('[情報] RAKUTEN_APP_ID または RAKUTEN_ACCESS_KEY が未設定のため、開発用モックデータ生成に切り替えます。');
   }
 
+  // 1. 既存の sales.json キャッシュデータをロード
+  const dataDir = path.join(__dirname, '../data');
+  const filePath = path.join(dataDir, 'sales.json');
+  let cachedBooks = [];
+  try {
+    if (fs.existsSync(filePath)) {
+      cachedBooks = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      console.log(`[キャッシュ] 既存の sales.json から ${cachedBooks.length} 件のデータをロードしました。`);
+    }
+  } catch (cacheError) {
+    console.warn('[キャッシュ] 既存キャッシュの読み込みに失敗しました:', cacheError.message);
+  }
+
   // 収集したすべての本を格納する配列
   let allBooks = [];
 
+  // 2. 各ストアからデータを収集（失敗時はキャッシュからレスキュー）
+  
+  // 2.1 楽天Kobo
   try {
-    // 1. 楽天Kobo APIからデータを収集 (新仕様に合わせてアクセスキーも渡す)
     const koboBooks = await parseRakuten(rakutenAppId, rakutenAccessKey, rakutenAffiliateId);
-    console.log(`[楽天Kobo] ${koboBooks.length} 件のデータを取得しました。`);
-    allBooks = allBooks.concat(koboBooks);
-
-    // 2. コミックシーモアからスクレイピングして収集
-    const seimorBooks = await parseSeimor(vcSid, vcPid);
-    console.log(`[シーモア] ${seimorBooks.length} 件のデータを取得しました。`);
-    allBooks = allBooks.concat(seimorBooks);
-
-    // 3. PR TIMES からプレスリリース（無料公開情報等）をスクレイピングして収集
-    try {
-      const prtimesBooks = await parsePrtimes();
-      console.log(`[PR TIMES] ${prtimesBooks.length} 件のデータを取得しました。`);
-      allBooks = allBooks.concat(prtimesBooks);
-    } catch (prtimesError) {
-      console.error('[PR TIMES] 収集プロセスでエラーが発生しましたが、続行します:', prtimesError.message);
+    if (koboBooks && koboBooks.length > 0) {
+      console.log(`[楽天Kobo] ${koboBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(koboBooks);
+    } else {
+      throw new Error('取得件数が0件です');
     }
+  } catch (koboError) {
+    console.error('[楽天Kobo] 取得に失敗したため、キャッシュデータから復元します:', koboError.message);
+    const koboCache = cachedBooks.filter(b => Object.keys(b.stores).includes('rakuten')).map(b => {
+      // 楽天ストアデータだけを抽出した平坦なオブジェクトを再構成
+      return {
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        publisher: b.publisher,
+        imageUrl: b.imageUrl,
+        genre: b.genre,
+        description: b.description,
+        endDate: b.endDate,
+        updatedAt: b.updatedAt,
+        store: 'rakuten',
+        url: b.stores.rakuten.url,
+        originalPrice: b.stores.rakuten.originalPrice,
+        salePrice: b.stores.rakuten.salePrice,
+        discountRate: b.stores.rakuten.discountRate
+      };
+    });
+    console.log(`[楽天Kobo] キャッシュから ${koboCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(koboCache);
+  }
 
+  // 2.2 コミックシーモア
+  try {
+    const seimorBooks = await parseSeimor(vcSid, vcPid);
+    if (seimorBooks && seimorBooks.length > 0) {
+      console.log(`[シーモア] ${seimorBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(seimorBooks);
+    } else {
+      throw new Error('取得件数が0件です');
+    }
+  } catch (seimorError) {
+    console.error('[シーモア] 取得に失敗したため、キャッシュデータから復元します:', seimorError.message);
+    const seimorCache = cachedBooks.filter(b => Object.keys(b.stores).includes('seimor')).map(b => {
+      return {
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        publisher: b.publisher,
+        imageUrl: b.imageUrl,
+        genre: b.genre,
+        description: b.description,
+        endDate: b.endDate,
+        updatedAt: b.updatedAt,
+        store: 'seimor',
+        url: b.stores.seimor.url,
+        originalPrice: b.stores.seimor.originalPrice,
+        salePrice: b.stores.seimor.salePrice,
+        discountRate: b.stores.seimor.discountRate
+      };
+    });
+    console.log(`[シーモア] キャッシュから ${seimorCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(seimorCache);
+  }
 
+  // 2.3 PR TIMES
+  try {
+    const prtimesBooks = await parsePrtimes();
+    if (prtimesBooks && prtimesBooks.length > 0) {
+      console.log(`[PR TIMES] ${prtimesBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(prtimesBooks);
+    } else {
+      throw new Error('取得件数が0件です');
+    }
+  } catch (prtimesError) {
+    console.error('[PR TIMES] 取得に失敗したため、キャッシュデータから復元します:', prtimesError.message);
+    const prtimesCache = cachedBooks.filter(b => Object.keys(b.stores).includes('prtimes')).map(b => {
+      return {
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        publisher: b.publisher,
+        imageUrl: b.imageUrl,
+        genre: b.genre,
+        description: b.description,
+        endDate: b.endDate,
+        updatedAt: b.updatedAt,
+        store: 'prtimes',
+        url: b.stores.prtimes.url,
+        originalPrice: b.stores.prtimes.originalPrice,
+        salePrice: b.stores.prtimes.salePrice,
+        discountRate: b.stores.prtimes.discountRate
+      };
+    });
+    console.log(`[PR TIMES] キャッシュから ${prtimesCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(prtimesCache);
+  }
+
+  try {
     // 3. 同一作品（同一巻）のストア間名寄せマージ処理
     const mergedMap = new Map();
     
@@ -115,25 +211,30 @@ async function run() {
     const finalBooks = Array.from(mergedMap.values());
     console.log(`[名寄せ] ストア間で重複する書籍を統合: ${allBooks.length}件 -> ${finalBooks.length}件`);
 
+    // 4. 期限切れセールの自動除外フィルタリング (JST本日以前のendDateを持つセールを除外)
+    const todayStr = jstNow.toISOString().split('T')[0]; // JSTの本日 YYYY-MM-DD
+    const activeBooks = finalBooks.filter(book => {
+      if (!book.endDate) return true; // 終了日の指定がないものは残す
+      return book.endDate >= todayStr; // 今日以降に終了するものは残す
+    });
+    console.log(`[フィルタ] 期限切れデータを自動除外: ${finalBooks.length}件 -> ${activeBooks.length}件`);
+
     // データの保存
-    if (finalBooks.length > 0) {
-      const dataDir = path.join(__dirname, '../data');
-      
+    if (activeBooks.length > 0) {
       // 保存先ディレクトリが存在しない場合は作成
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
       }
 
-      const filePath = path.join(dataDir, 'sales.json');
-      fs.writeFileSync(filePath, JSON.stringify(finalBooks, null, 2), 'utf-8');
+      fs.writeFileSync(filePath, JSON.stringify(activeBooks, null, 2), 'utf-8');
       
       console.log('====================================');
       console.log(`データの書き込み完了: ${filePath}`);
-      console.log(`合計 ${allBooks.length} 件のデータを保存しました。`);
+      console.log(`合計 ${activeBooks.length} 件のデータを保存しました。`);
       console.log('====================================');
     } else {
       console.log('====================================');
-      console.log('警告: 収集されたデータが0件のため、ファイル更新をスキップしました。');
+      console.log('警告: 収集された有効データが0件のため、ファイル更新をスキップしました。');
       console.log('====================================');
     }
 
