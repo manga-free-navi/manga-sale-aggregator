@@ -18,8 +18,8 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{__html: `
-          window.addEventListener('error', function(e) {
-            // エラーを画面最下部に赤いデバッグアラートとして表示（一時的デバッグ用）
+          // デバッグコンソールを表示するための共通関数
+          function showDebugBanner(htmlContent) {
             var div = document.getElementById('debug-error-console');
             if (!div) {
               div = document.createElement('div');
@@ -28,33 +28,48 @@ export default function RootLayout({
               div.style.bottom = '10px';
               div.style.left = '10px';
               div.style.right = '10px';
-              div.style.background = 'rgba(239, 68, 68, 0.95)';
+              div.style.background = 'rgba(17, 24, 39, 0.95)';
               div.style.color = '#fff';
               div.style.padding = '15px';
               div.style.borderRadius = '8px';
               div.style.zIndex = '999999';
               div.style.fontSize = '12px';
               div.style.fontFamily = 'monospace';
-              div.style.maxHeight = '200px';
+              div.style.maxHeight = '250px';
               div.style.overflowY = 'auto';
               div.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+              div.style.border = '1px solid #ef4444';
               document.body.appendChild(div);
             }
-            div.innerHTML += '<div style="margin-bottom: 5px;">⚠️ Error: ' + e.message + ' at ' + (e.filename || 'unknown') + ':' + (e.lineno || '0') + '</div>';
+            div.innerHTML += htmlContent;
+          }
 
-            if (e.message && (e.message.indexOf('ChunkLoadError') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
+          window.addEventListener('error', function(e) {
+            // アセット（画像やスタイルシート）のロードエラーは message が存在しないため無視
+            if (!e.message) return;
+
+            showDebugBanner('<div style="margin-bottom: 5px; color: #fecaca;">⚠️ Runtime Error: ' + e.message + ' at ' + (e.filename || 'unknown') + ':' + (e.lineno || '0') + '</div>');
+
+            if (e.message.indexOf('ChunkLoadError') !== -1 || e.message.indexOf('Loading chunk') !== -1) {
               var now = Date.now();
               var lastReload = sessionStorage.getItem('last_chunk_error_reload');
-              // 10秒以内の連続リロードを防ぐ（無限ループ防止ガード）
               if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
                 sessionStorage.setItem('last_chunk_error_reload', now.toString());
-                console.warn('ChunkLoadErrorを検知しました。最新のアセットを取得するためページをリロードします...');
+                console.warn('ChunkLoadErrorを検知しました。リロードします...');
                 window.location.reload();
-              } else {
-                console.error('短時間に繰り返しChunkLoadErrorが発生したため、無限リロードを防ぐためにリロードを停止しました。');
               }
             }
           }, true);
+
+          window.addEventListener('unhandledrejection', function(e) {
+            var msg = e.reason ? (e.reason.message || String(e.reason)) : 'Promise Rejection';
+            var stack = e.reason && e.reason.stack ? e.reason.stack : '';
+            var html = '<div style="margin-bottom: 5px; color: #fde047;">⚠️ Promise Error: ' + msg + '</div>';
+            if (stack) {
+              html += '<pre style="margin: 5px 0 10px 10px; font-size: 10px; color: #d1d5db; white-space: pre-wrap; background: #1f2937; padding: 5px; border-radius: 4px;">' + stack.substring(0, 300) + '</pre>';
+            }
+            showDebugBanner(html);
+          });
         `}} />
         <link rel="manifest" href="manifest.json" />
         <link rel="apple-touch-icon" href="icon.svg" />
