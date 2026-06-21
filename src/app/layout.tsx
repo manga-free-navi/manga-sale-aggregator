@@ -19,6 +19,29 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{__html: `
           window.addEventListener('error', function(e) {
+            // エラーを画面最下部に赤いデバッグアラートとして表示（一時的デバッグ用）
+            var div = document.getElementById('debug-error-console');
+            if (!div) {
+              div = document.createElement('div');
+              div.id = 'debug-error-console';
+              div.style.position = 'fixed';
+              div.style.bottom = '10px';
+              div.style.left = '10px';
+              div.style.right = '10px';
+              div.style.background = 'rgba(239, 68, 68, 0.95)';
+              div.style.color = '#fff';
+              div.style.padding = '15px';
+              div.style.borderRadius = '8px';
+              div.style.zIndex = '999999';
+              div.style.fontSize = '12px';
+              div.style.fontFamily = 'monospace';
+              div.style.maxHeight = '200px';
+              div.style.overflowY = 'auto';
+              div.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+              document.body.appendChild(div);
+            }
+            div.innerHTML += '<div style="margin-bottom: 5px;">⚠️ Error: ' + e.message + ' at ' + (e.filename || 'unknown') + ':' + (e.lineno || '0') + '</div>';
+
             if (e.message && (e.message.indexOf('ChunkLoadError') !== -1 || e.message.indexOf('Loading chunk') !== -1)) {
               var now = Date.now();
               var lastReload = sessionStorage.getItem('last_chunk_error_reload');
