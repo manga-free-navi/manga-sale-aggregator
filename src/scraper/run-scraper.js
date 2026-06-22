@@ -117,15 +117,30 @@ async function run() {
     
     function cleanTitle(title) {
       let t = title;
+      // 不要な装飾やセール文言（【】や［］）を削除
       t = t.replace(/【[^】]*】/g, ' ');
       t = t.replace(/\[[^\]]*\]/g, ' ');
-      t = t.replace(/\([^\)]*\)/g, ' ');
-      t = t.replace(/（[^）]*）/g, ' ');
+      
+      // かっこ内にセール・期間関連のキーワードがある場合のみ、そのかっこを丸ごと消去
+      t = t.replace(/（期間限定[^）]*）/g, ' ');
+      t = t.replace(/\(期間限定[^\)]*\)/g, ' ');
+      t = t.replace(/（分冊版[^）]*）/g, ' ');
+      t = t.replace(/\(分冊版[^\)]*\)/g, ' ');
+      t = t.replace(/（無料[^）]*）/g, ' ');
+      t = t.replace(/\(無料[^\)]*\)/g, ' ');
+      
+      // 残ったかっこ記号自体を取り除く（かっこ内の巻数表記などは残す）
+      t = t.replace(/[\(\)（）\{\}｛｝]/g, '');
+      
+      // ノイズワードを消去
       t = t.replace(/期間限定/g, ' ');
       t = t.replace(/無料/g, ' ');
       t = t.replace(/セール/g, ' ');
       t = t.replace(/お試し/g, ' ');
       t = t.replace(/試し読み/g, ' ');
+      t = t.replace(/お試し版/g, ' ');
+      
+      // 空白の除去
       t = t.replace(/\s+/g, '');
       return t.toLowerCase().trim();
     }

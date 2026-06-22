@@ -29,7 +29,7 @@ async function parseRakuten(appId, accessKey, affiliateId) {
 
     for (const genreId of genreIds) {
       console.log(`[楽天Kobo] ジャンル ID: ${genreId} の収集を開始します...`);
-      for (let page = 1; page <= 2; page++) {
+      for (let page = 1; page <= 4; page++) {
         const params = {
           applicationId: appId,
           accessKey: accessKey,
@@ -59,11 +59,19 @@ async function parseRakuten(appId, accessKey, affiliateId) {
 
           if (response.data && response.data.Items) {
             const items = response.data.Items;
+            if (items.length === 0) {
+              console.log(`[楽天Kobo] ジャンル ${genreId} - ページ ${page}: これ以上のデータはありません。ループを終了します。`);
+              break;
+            }
             console.log(`[楽天Kobo] ジャンル ${genreId} - ページ ${page}: APIより ${items.length} 件のアイテムを取得しました。`);
 
             items.forEach((itemWrapper) => {
               const item = itemWrapper.Item;
               if (!item) return;
+
+              const salePrice = item.itemPrice;
+              // 0円（無料）以外の有料本はすべて除外する
+              if (salePrice !== 0) return;
 
               let endDate = null;
               if (item.salesEndDate) {
@@ -72,10 +80,8 @@ async function parseRakuten(appId, accessKey, affiliateId) {
               }
 
               const finalUrl = item.affiliateUrl || item.itemUrl;
-              const salePrice = item.itemPrice;
-              const isFree = salePrice === 0;
-              const originalPrice = isFree ? 500 : Math.round(salePrice * 1.5);
-              const discountRate = isFree ? 100 : 33;
+              const originalPrice = 500; // 無料本なので、想定の元価格を一律500円として扱う
+              const discountRate = 100;  // 0円なので100%OFF
 
               books.push({
                 id: `rakuten-${item.itemNumber || item.title.substring(0, 10)}`,
@@ -94,9 +100,12 @@ async function parseRakuten(appId, accessKey, affiliateId) {
                 updatedAt: new Date().toISOString()
               });
             });
+          } else {
+            break;
           }
         } catch (pageError) {
           console.error(`[楽天Kobo] ジャンル ${genreId} - ページ ${page} の取得に失敗しました:`, pageError.message);
+          break;
         }
 
         // リクエスト間のウェイト (1秒)
