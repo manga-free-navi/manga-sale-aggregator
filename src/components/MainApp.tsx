@@ -550,93 +550,100 @@ export default function MainApp() {
       ) : (
         <div className={viewMode === 'gallery' ? "book-gallery-grid" : "book-grid"}>
           {filteredAndSortedGroups.map((group, index) => {
-            // 3番目のカードの後にインライン広告を挟み込む（AdSense収益化用）
-            const insertAd = index === 2;
-            return (
-              <div key={group.id} style={{ display: 'contents' }}>
-                <LazyRender>
-                  {viewMode === 'gallery' ? (
+            const cardElement = (
+              <LazyRender key={group.id}>
+                {viewMode === 'gallery' ? (
+                  <div 
+                    className="gallery-card" 
+                    style={{
+                      position: 'relative',
+                      aspectRatio: '2/3',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-card)',
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onClick={() => {
+                      // クリック時は代表電子ストアに遷移
+                      const repBook = group.books[0];
+                      const firstStoreKey = Object.keys(repBook.stores)[0];
+                      const storeUrl = repBook.stores[firstStoreKey]?.url || '';
+                      if (storeUrl) window.open(storeUrl, '_blank', 'noopener,noreferrer');
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={group.books[0].imageUrl} 
+                      alt={group.books[0].title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      loading="lazy"
+                    />
                     <div 
-                      className="gallery-card" 
+                      className="gallery-overlay" 
                       style={{
-                        position: 'relative',
-                        aspectRatio: '2/3',
-                        borderRadius: '12px',
-                        overflow: 'hidden',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card)',
-                        boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onClick={() => {
-                        // クリック時は代表電子ストアに遷移
-                        const repBook = group.books[0];
-                        const firstStoreKey = Object.keys(repBook.stores)[0];
-                        const storeUrl = repBook.stores[firstStoreKey]?.url || '';
-                        if (storeUrl) window.open(storeUrl, '_blank', 'noopener,noreferrer');
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'linear-gradient(to top, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.4) 80%, transparent 100%)',
+                        padding: '1.25rem 0.75rem 0.75rem 0.75rem',
+                        color: '#fff',
+                        opacity: 0,
+                        transition: 'opacity 0.3s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        height: '100%',
+                        boxSizing: 'border-box'
                       }}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={group.books[0].imageUrl} 
-                        alt={group.books[0].title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        loading="lazy"
-                      />
-                      <div 
-                        className="gallery-overlay" 
-                        style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          background: 'linear-gradient(to top, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.4) 80%, transparent 100%)',
-                          padding: '1.25rem 0.75rem 0.75rem 0.75rem',
-                          color: '#fff',
-                          opacity: 0,
-                          transition: 'opacity 0.3s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'flex-end',
-                          height: '100%',
-                          boxSizing: 'border-box'
-                        }}
-                      >
-                        <div style={{ display: 'flex', gap: '4px', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.6rem', background: '#e11d48', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
-                            {Math.max(...group.books.map(b => getBookMaxDiscount(b)))}% OFF
+                      <div style={{ display: 'flex', gap: '4px', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.6rem', background: '#e11d48', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                          {Math.max(...group.books.map(b => getBookMaxDiscount(b)))}% OFF
+                        </span>
+                        {group.books.length > 1 && (
+                          <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                            他 {group.books.length - 1}冊
                           </span>
-                          {group.books.length > 1 && (
-                            <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                              他 {group.books.length - 1}冊
-                            </span>
-                          )}
-                        </div>
-                        <h4 style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 0.2rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                          {group.books[0].title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '')}
-                        </h4>
-                        <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0 0 0.5rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                          {group.books[0].author}
-                        </p>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#39ff14' }}>
-                          ¥{Math.min(...group.books.map(b => getBookMinPrice(b))).toLocaleString()}〜
-                        </div>
+                        )}
+                      </div>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 0.2rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {group.books[0].title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '')}
+                      </h4>
+                      <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0 0 0.5rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {group.books[0].author}
+                      </p>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#39ff14' }}>
+                        ¥{Math.min(...group.books.map(b => getBookMinPrice(b))).toLocaleString()}〜
                       </div>
                     </div>
-                  ) : (
-                    <BookCard 
-                      books={group.books} 
-                      animeVideos={animeVideos} 
-                      gameSales={gameSales}
-                    />
-                  )}
-                </LazyRender>
-                {insertAd && (
-                  <AdContainer slot="inline-ad-slot-1" type="inline" />
+                  </div>
+                ) : (
+                  <BookCard 
+                    books={group.books} 
+                    animeVideos={animeVideos} 
+                    gameSales={gameSales}
+                  />
                 )}
-              </div>
+              </LazyRender>
             );
+
+            // 8枚のカードごとにインライン広告を挟む（最初の広告は4枚目の後に配置して見えやすくする）
+            if ((index + 1) % 8 === 4) {
+              return (
+                <div key={`wrapper-${group.id}`} style={{ display: 'contents' }}>
+                  {cardElement}
+                  <div key={`grid-ad-${index}`} style={{ gridColumn: '1 / -1' }}>
+                    <AdContainer slot={`in-grid-ad-${index}`} format="fluid" />
+                  </div>
+                </div>
+              );
+            }
+
+            return cardElement;
           })}
         </div>
       )}
