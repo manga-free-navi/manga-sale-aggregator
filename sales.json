@@ -1,87 +1,189 @@
 [
   {
-    "id": "rakuten-mock-1",
-    "title": "呪術廻戦 1",
-    "author": "芥見下々",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/5480/9784088815169.jpg?_ex=200x200",
-    "genre": "少年漫画",
-    "description": "類稀なる身体能力を持つ高校生・虎杖悠仁は、ある日学校に眠る「呪物」の封印が解かれたことで、呪いを巡る戦いに身を投じることになる。呪いの王「両面宿儺」と肉体を共有することになった虎杖の運命は──。期間限定無料お試し版！",
-    "endDate": "2026-06-30",
-    "updatedAt": "2026-06-22T00:35:13.880Z",
-    "stores": {
-      "rakuten": {
-        "url": "https://books.rakuten.co.jp/rb/15478440/?scid=af_pc_etc&sc2id=af_101_0_0",
-        "originalPrice": 480,
-        "salePrice": 0,
-        "discountRate": 100
-      },
-      "seimor": {
-        "url": "https://www.cmoa.jp/title/154673/",
-        "originalPrice": 480,
-        "salePrice": 0,
-        "discountRate": 100
-      }
-    }
-  },
-  {
-    "id": "rakuten-mock-2",
-    "title": "怪獣8号 1",
-    "author": "松本直也",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/0285/9784088826158.jpg?_ex=200x200",
-    "genre": "少年漫画",
-    "description": "怪獣発生率が世界屈指の日本。かつて防衛隊員を目指していた日比野カフカは、夢破れ怪獣専門清労業者で働いていた。しかし、謎の小型生物によって身体が怪獣化し、「怪獣8号」と呼ばれる討伐対象になってしまう──！期間限定無料お試し版！",
-    "endDate": "2026-06-28",
-    "updatedAt": "2026-06-22T00:35:13.880Z",
-    "stores": {
-      "rakuten": {
-        "url": "https://books.rakuten.co.jp/rb/16600285/?scid=af_pc_etc&sc2id=af_101_0_0",
-        "originalPrice": 500,
-        "salePrice": 0,
-        "discountRate": 100
-      },
-      "seimor": {
-        "url": "https://www.cmoa.jp/title/213567/",
-        "originalPrice": 500,
-        "salePrice": 0,
-        "discountRate": 100
-      }
-    }
-  },
-  {
-    "id": "rakuten-mock-3",
-    "title": "アオハライド 1 (50% OFF)",
-    "author": "咲坂伊緒",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/3725/9784088466477.jpg?_ex=200x200",
-    "genre": "少女漫画",
-    "description": "高校1年生の双葉は、中学時代に転校してしまった初恋の相手「田中くん」と再会する。しかし、彼は名前を「馬渕」に変え、性格もすっかり変わっていた。空白の3年を経て、再び動き出す二人の恋。人気の青春ラブストーリー！",
-    "endDate": "2026-07-02",
-    "updatedAt": "2026-06-22T00:35:13.880Z",
-    "stores": {
-      "rakuten": {
-        "url": "https://books.rakuten.co.jp/rb/11193725/?scid=af_pc_etc&sc2id=af_101_0_0",
-        "originalPrice": 480,
-        "salePrice": 240,
-        "discountRate": 50
-      }
-    }
-  },
-  {
-    "id": "seimor-mock-3",
-    "title": "葬送のフリーレン 1",
-    "author": "山田鐘人/アベツカサ",
-    "publisher": "小学館",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/4710/9784098501809.jpg?_ex=200x200",
+    "id": "rakuten-1230001355598",
+    "title": "アーマードール・アライブ１【無料版】",
+    "author": "幾谷正",
+    "publisher": "FunnyCreative",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1496/2000004671496.jpg?_ex=200x200",
     "genre": "少年・青年漫画",
-    "description": "葬送のフリーレン 1巻 期間限定無料お試し版！",
-    "endDate": "2026-07-31",
-    "updatedAt": "2026-06-22T00:35:14.879Z",
+    "description": "「滅びゆく世界、戦闘機械の宿命。それでも私は恋をしたーー」\n人工知能を操り人間を殺戮する謎の電子汚染現象【ゲーティア】によって、滅亡の道に立たされた世界。\n残された人類は自我を持つ人型兵器【アーマードール】を開発し、心無き機械たちとの戦いに明け暮れていた。\n英雄と呼ばれた操縦士の少年「愛生文楽」は、激戦の中で長年連れ添った愛機を失い、なぜか正体を隠して訓練学校に通わされることに。\nしかも彼の乗機として与えられた、新たな機体〈メフィストフェレス〉ーーその人工知能となる少女フェレスは、戦闘よりも家事が得意というダメダメな兵器だった。\n機械のような人間の少年と、人間のような機械の少女が、出会い、戦い、恋をする。近未来ＳＦロボットラブコメディ。\n★☆★☆★☆\nこちらは【無料版】になっています。\n有料版と内容は同じで本文も最後まで読むことができますが、挿絵と書き下ろし短編は有料版のみとなっています。\nご了承ください。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:10.338Z",
     "stores": {
-      "seimor": {
-        "url": "https://www.cmoa.jp/title/209876/",
-        "originalPrice": 499,
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F2ec7c569e83d39fab93913d062c50a86%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003423691",
+    "title": "アーマードール・アライブ２【無料版】",
+    "author": "幾谷正",
+    "publisher": "FunnyCreative",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/8886/2000007758886.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "人工知能を操り人類を殺戮する謎の電子汚染現象【ゲーティア】の出現によって、滅亡の道を歩む世界。 \n残された人類は自我を持つ人型兵器【アーマードール】を開発し、心無き機械たちとの戦いを繰り広げていた。\n\nかつての愛機との死闘を乗り越え、訓練学校で穏やかな日常を送る「愛生文楽」の前に表われた謎の少女サラ。\n彼女は乗り込んだ操縦士の命を奪うと恐れられる人形〈アスモデウス〉の人形知能だった。\n操縦士達の怪死の原因を探るため、テストパイロットに選ばれる文楽だが……!?\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:13.415Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F8a2f7fd47f823b6e8e33ed7b1ef82654%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230002122205",
+    "title": "羊の平和　第１３章(３)「世界との切断」からの回復",
+    "author": "無量光時",
+    "publisher": "無量光時",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/9785/2000006009785.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "電子書跡向けオリジナル作品，シリーズ最新稿（２０１８年２月段階）．\n横書きリフロータイプ，本文の文字数約１万２千字（漢字使用率４５％）ルビ付き．\n（テーマ）アフォーダンス理論は，アメリカの知覚心理学者ジェームズ・ギブソンが創始した，認知と行動の研究であり．下等とされる動物にも知性的な認知と行動が有るのではないかとの，示唆を与える．それは，動物としての人間に対しても，既存の知性の捉え方や「認知の枠組」への変革を迫るものである，かもしれない．\n※シリーズ第１弾［羊の平和第１部羊飼いと羊］は，引き続き無料配信中．\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:10.338Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F189f47653bbb34bd93256c4967982db8%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003310977",
+    "title": "マイティ・スレイヴァーact.1（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/6632/2000007566632.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "【注意】この作品には動画データが含まれています。\n楽天Koboの各アプリでは動画データに対応しないため、端末によっては正常に再生できない場合があるようです。\nご購入をお考えの方は、まず『無料見本版』で動作を確認していただくようお願い致します。\n推奨環境は「Windows10パソコン＋Microsoft Edge」です。\nフルCGで挿絵が動く！\n電子書籍「ならでは」の新感覚ノベル、ここに登場──\n遠い未来の遠い星にて、巨大ロボットが大暴れ⁉\n完全オリジナルの３DCGアニメが織りなす、SF・コメディ・アクション短編！\n動画小説シリーズ第一弾、まずは無料見本版をご覧ください！\n【↓宣伝動画↓】\nYouTube\nps://www.youtube.com/channel/UCPfyR4w0loasMKKAwf3Vkwg?view_as=subscriber\nニコニコ動画\nhttps://www.nicovideo.jp/watch/sm31825954\n感想・お問い合わせは\nhttps://twitter.com/noratama7\nhttps://twitter.com/noratamaex\nhttp://blog.ap.teacup.com/kohbohsenki/\nへお願い致します。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:13.415Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2Ffb10c390435e3b6099dbe4ef8e0e5dda%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003324622",
+    "title": "マイティ・スレイヴァーact.2（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/0723/2000007570723.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "【注意】この作品には動画データが含まれています。\n楽天koboの各アプリでは動画データに対応しないため、端末によっては正常に再生できない場合があります。\nご購入をお考えの方は、まず『無料見本版』で動作を確認して頂くようお願い致します。\n推奨環境は「Windows10パソコン＋Microsoft Edge」です。\n巨大ロボット・スレイヴァーによる格闘技『スレイバトル』。\n王者キャロルとタッグを組んで、新人ステラの遠征試合。\n敵は空飛ぶ『可変スレイヴァー』！\n3対3の大混戦、果たして勝利は誰の手に…⁉\nフルCG動画小説・第2弾、熱いゴングを鳴らします！\n【↓宣伝動画↓】\nYouTube\nps://www.youtube.com/channel/UCPfyR4w0loasMKKAwf3Vkwg?view_as=subscriber\nニコニコ動画\nhttps://www.nicovideo.jp/watch/sm31825954\n感想・お問い合わせは\nhttps://twitter.com/noratama7\nhttps://twitter.com/noratamaex\nhttp://blog.ap.teacup.com/kohbohsenki/\nへお願い致します。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:13.415Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F27b57ce6cf053f08b18f83ef6afc3a31%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003327043",
+    "title": "マイティ・スレイヴァーact.3（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/3259/2000007573259.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "【注意】この作品には動画データが含まれています。\n楽天Koboの各アプリでは動画データに対応しないため、端末によっては正常に再生できない場合があるようです。\nご購入をお考えの方は、まず『無料見本版』で動作を確認していただくようお願い致します。\n推奨環境は「Windows10パソコン＋Microsoft Edge」です。\n人里はなれた山奥で、相次ぐ謎の失踪事件。\n兄の行方を探す少女と、保安官その他一名。\n闇夜に潜む深紅の巨体に、彼らは打ち勝てるのか!?\n動画小説・第3弾、ここに飛び立つ！\n【↓宣伝動画↓】\nYouTube\nps://www.youtube.com/channel/UCPfyR4w0loasMKKAwf3Vkwg?view_as=subscriber\nニコニコ動画\nhttps://www.nicovideo.jp/watch/sm31825954\n感想・お問い合わせは\nhttps://twitter.com/noratama7\nhttps://twitter.com/noratamaex\nhttp://blog.ap.teacup.com/kohbohsenki/\nへお願い致します。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:13.415Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F78cb08d45fde3363a422a2b72ad14530%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003328811",
+    "title": "マイティ・スレイヴァーact.4（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/7320/2000007577320.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "【注意】この作品には動画データが含まれています。\n楽天Koboの各アプリでは動画データに対応しないため、端末によっては正常に再生できない場合があるようです。\nご購入をお考えの方は、まず『無料見本版』で動作を確認していただくようお願い致します。\n推奨環境は「Windows10パソコン＋Microsoft Edge」です。\n採掘工・スミス一家が湖底で見つけた、移民船の落とし物。\nお宝目当ての盗賊と、正義を守る保安官。\n追いつ追われつ繰り広げられる、激しいバトルの行く末は!?\n動画小説・第4弾、全力疾走いたします！\n【↓宣伝動画↓】\nYouTube\nps://www.youtube.com/channel/UCPfyR4w0loasMKKAwf3Vkwg?view_as=subscriber\nニコニコ動画\nhttps://www.nicovideo.jp/watch/sm31825954\n感想・お問い合わせは\nhttps://twitter.com/noratama7\nhttps://twitter.com/noratamaex\nhttp://blog.ap.teacup.com/kohbohsenki/\nへお願い致します。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:13.415Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F91ec3774064e311fba4386ae358bb70f%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003333891",
+    "title": "マイティ・スレイヴァーact.5（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/3220/2000007583220.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "【注意】この作品には動画データが含まれています。\n楽天Koboの各アプリでは動画データに対応しないため、端末によっては正常に再生できない場合があるようです。\nご購入をお考えの方は、まず『無料見本版』で動作を確認していただくようお願い致します。\n推奨環境は「Windows10パソコン＋Microsoft Edge」です。\n無人の荒野で山籠もりする二人の青年、ユゥトとビクター。\n奇怪な姿のスレイヴァーと、それに追われる謎めいた少女。\n問答無用の大鎌が、大地を切り裂き火花を散らす！\n動画小説・第5弾、いよいよ発進！\n【↓宣伝動画↓】\nYouTube\nps://www.youtube.com/channel/UCPfyR4w0loasMKKAwf3Vkwg?view_as=subscriber\nニコニコ動画\nhttps://www.nicovideo.jp/watch/sm31825954\n感想・お問い合わせは\nhttps://twitter.com/noratama7\nhttps://twitter.com/noratamaex\nhttp://blog.ap.teacup.com/kohbohsenki/\nへお願い致します。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:13.415Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F866cbb97ea6630a297e2810836a65ce5%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003338117",
+    "title": "マイティ・スレイヴァーact.6（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/3874/2000007603874.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "【注意】この作品には動画データが含まれています。\n楽天Koboの各アプリでは動画データに対応しないため、端末によっては正常に再生できない場合があるようです。\nご購入をお考えの方は、まず『無料見本版』で動作を確認していただくようお願い致します。\n推奨環境は「Windows10パソコン＋Microsoft Edge」です。\n上級保安官を目指し、研修に励むスレイヴァー使い三人。\n立ち塞がるは鬼教官の美女二人、そして粗暴な闖入者。\n繰り出される巨大な拳と無理難題に、彼らは明日を掴めるか!?\n動画小説・第6弾、ラストスパートです!!\n【↓宣伝動画↓】\nYouTube\nps://www.youtube.com/channel/UCPfyR4w0loasMKKAwf3Vkwg?view_as=subscriber\nニコニコ動画\nhttps://www.nicovideo.jp/watch/sm31825954\n感想・お問い合わせは\nhttps://twitter.com/noratama7\nhttps://twitter.com/noratamaex\nhttp://blog.ap.teacup.com/kohbohsenki/\nへお願い致します。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:13.415Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F4cf772468585392686e37681efc19c0a%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-4310000188458",
+    "title": "「さあ、どんでん返しだ。」（キャンペーン８作品無料試し読み）",
+    "author": "五十嵐律人/三津田信三/潮谷験/似鳥鶏/周木律/麻耶雄嵩/東川篤哉/真下みこと",
+    "publisher": "講談社",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/9568/2000010059568.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "自信をもっておすすめできる入魂のミステリー８作品、無料試し読み版！\n読み逃すのはもったいない！　というミステリーが、2021年7月から10月にかけて、講談社文芸第三出版部から刊行されます。あなたがご存じの作家も、まだ読んだことのない作家も、全員入魂の８作品！全作、自信をもって、おすすめできます。\nお時間少しだけいただけませんでしょうか？\n（収録順）\n五十嵐律人『原因において自由な物語』（7月15日）\n三津田信三『忌名の如き贄るもの』（7月29日）\n潮谷験『時空犯』（8月19日）\n似鳥鶏『推理大戦』（8月25日）\n周木律『楽園のアダム』（9月3日）\n麻耶雄嵩『メルカトル悪人狩り』（9月17日）\n東川篤哉『居酒屋「一服亭」の四季』（9月30日）\n真下みこと『あさひは失敗しない』（10月21日）\n＊刊行日は変更の可能性もあります。\n",
+    "endDate": null,
+    "updatedAt": "2026-06-22T01:49:19.608Z",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F43e534621d453ef3b1e10021e0dd8dd5%2F",
+        "originalPrice": 500,
         "salePrice": 0,
         "discountRate": 100
       }
