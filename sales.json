@@ -1,18 +1,18 @@
 [
   {
-    "id": "rakuten-mock-jjk-1",
-    "title": "呪術廻戦 1",
-    "author": "芥見下々",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
-    "genre": "少年漫画",
-    "description": "類稀なる身体能力を持つ高校生・虎杖悠仁は、ある日学校に眠る「呪物」の封印が解かれたことで、呪いを巡る戦いに身を投じることになる。期間限定無料お試し版！",
-    "endDate": "2026-06-30",
-    "updatedAt": "2026-06-22T08:30:33.069Z",
-    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "id": "rakuten-1230001355598",
+    "title": "アーマードール・アライブ１【無料版】",
+    "author": "幾谷正",
+    "publisher": "FunnyCreative",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1496/2000004671496.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "「滅びゆく世界、戦闘機械の宿命。それでも私は恋をしたーー」人工知能を操り人間を殺戮する謎の電子汚染現象【ゲーティア】によって、滅亡 of 道に立たされた世界。残された人類は自我を持つ人型兵器【アーマードール】を開発し、心無き機械たちとの戦いに明け暮れていた。近未来ＳＦロボットラブコメディ。こちらは【無料版】になっています。",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜2巻無料",
     "stores": {
       "rakuten": {
-        "url": "https://books.rakuten.co.jp/rk/a5c4e78297b43a9fa05f42289457a414/",
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F2ec7c569e83d39fab93913d062c50a86%2F",
         "originalPrice": 500,
         "salePrice": 0,
         "discountRate": 100
@@ -20,79 +20,19 @@
     }
   },
   {
-    "id": "rakuten-mock-jjk-2",
-    "title": "呪術廻戦 2",
-    "author": "芥見下々",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
-    "genre": "少年漫画",
-    "description": "少年漫画の王道！呪術廻戦第2巻セール中！",
-    "endDate": "2026-06-30",
-    "updatedAt": "2026-06-22T08:30:33.069Z",
-    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "id": "rakuten-1230003423691",
+    "title": "アーマードール・アライブ２【無料版】",
+    "author": "幾谷正",
+    "publisher": "FunnyCreative",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/8886/2000007758886.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "人工知能を操り人類を殺戮する謎の電子汚染現象【ゲーティア】の出現によって、滅亡の道を歩む世界。残された人類は自我を持つ人型兵器【アーマードール】を開発し、心無き機械たちとの戦いを繰り広げていた。操縦士達の怪死の原因を探るため、テストパイロットに選ばれる文楽だが……!?",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜2巻無料",
     "stores": {
       "rakuten": {
-        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd02/",
-        "originalPrice": 500,
-        "salePrice": 240,
-        "discountRate": 52
-      }
-    }
-  },
-  {
-    "id": "rakuten-mock-kj8-1",
-    "title": "怪獣8号 1",
-    "author": "松本直也",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
-    "genre": "少年漫画",
-    "description": "怪獣発生率が世界屈指の日本。夢破れ怪獣専門清掃業者で働いていたカフカの身体が怪獣化し、「怪獣8号」と呼ばれる討伐対象になってしまう──！期間限定無料お試し版！",
-    "endDate": "2026-06-28",
-    "updatedAt": "2026-06-22T08:30:33.069Z",
-    "volsFreeText": "1巻無料 ＆ 続巻セール",
-    "stores": {
-      "rakuten": {
-        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd11/",
-        "originalPrice": 350,
-        "salePrice": 0,
-        "discountRate": 100
-      }
-    }
-  },
-  {
-    "id": "rakuten-mock-kj8-2",
-    "title": "怪獣8号 2",
-    "author": "松本直也",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
-    "genre": "少年漫画",
-    "description": "話題沸騰の怪獣アクション、第2巻セール中！",
-    "endDate": "2026-06-28",
-    "updatedAt": "2026-06-22T08:30:33.069Z",
-    "volsFreeText": "1巻無料 ＆ 続巻セール",
-    "stores": {
-      "rakuten": {
-        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd12/",
-        "originalPrice": 350,
-        "salePrice": 350,
-        "discountRate": 30
-      }
-    }
-  },
-  {
-    "id": "rakuten-mock-aoharu-1",
-    "title": "アオハライド 1",
-    "author": "咲坂伊緒",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/9053/2000000149053.jpg?_ex=200x200",
-    "genre": "少女漫画",
-    "description": "高校1年生の双葉は、中学時代に転校してしまった初恋 of 相手「田中くん」と再会する。期間限定無料お試し版！",
-    "endDate": "2026-07-02",
-    "updatedAt": "2026-06-22T08:30:33.069Z",
-    "volsFreeText": "1巻無料 ＆ 続巻セール",
-    "stores": {
-      "rakuten": {
-        "url": "https://books.rakuten.co.jp/rk/6c290efbb92b4de1aed7a488ad690c8a/",
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F8a2f7fd47f823b6e8e33ed7b1ef82654%2F",
         "originalPrice": 500,
         "salePrice": 0,
         "discountRate": 100
@@ -100,42 +40,142 @@
     }
   },
   {
-    "id": "rakuten-mock-aoharu-2",
-    "title": "アオハライド 2 (50% OFF)",
-    "author": "咲坂伊緒",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/0759/2000000250759.jpg?_ex=200x200",
-    "genre": "少女漫画",
-    "description": "空白の3年を経て、再び動き出す二人の恋。人気の青春ラブストーリー、第2巻セール！",
-    "endDate": "2026-07-02",
-    "updatedAt": "2026-06-22T08:30:33.069Z",
-    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "id": "rakuten-1230003310977",
+    "title": "マイティ・スレイヴァーact.1（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/6632/2000007566632.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "フルCGで挿絵が動く！電子書籍「ならでは」の新感覚ノベル、ここに登場──遠い未来の遠い星にて、巨大ロボットが大暴れ!?完全オリジナルの３DCGアニメが織りなす、SF・コメディ・アクション短編！動画小説シリーズ第一弾、まずは無料見本版をご覧ください！",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜6巻無料",
     "stores": {
       "rakuten": {
-        "url": "https://books.rakuten.co.jp/rk/78424a5effd540ba8646292c8ca70418/",
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2Ffb10c390435e3b6099dbe4ef8e0e5dda%2F",
         "originalPrice": 500,
-        "salePrice": 240,
-        "discountRate": 52
+        "salePrice": 0,
+        "discountRate": 100
       }
     }
   },
   {
-    "id": "rakuten-mock-aoharu-3",
-    "title": "アオハライド 3 (30% OFF)",
-    "author": "咲坂伊緒",
-    "publisher": "集英社",
-    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/9797/2000000209797.jpg?_ex=200x200",
-    "genre": "少女漫画",
-    "description": "揺れ動く登場人物たちの心情。アオハライド第3巻セール！",
-    "endDate": "2026-07-02",
-    "updatedAt": "2026-06-22T08:30:33.069Z",
-    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "id": "rakuten-1230003324622",
+    "title": "マイティ・スレイヴァーact.2（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/0723/2000007570723.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "巨大ロボット・スレイヴァーによる格闘技『スレイバトル』。王者キャロルとタッグを組んで、新人ステラの遠征試合。敵は空飛ぶ『可変スレイヴァー』！3対3の大混戦、果たして勝利は誰の手に…!?フルCG動画小説・第2弾、熱いゴングを鳴らします！",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜6巻無料",
     "stores": {
       "rakuten": {
-        "url": "https://books.rakuten.co.jp/rk/cce5f2144e5b471480e0c86c858f673e/",
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F27b57ce6cf053f08b18f83ef6afc3a31%2F",
         "originalPrice": 500,
-        "salePrice": 336,
-        "discountRate": 33
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003327043",
+    "title": "マイティ・スレイヴァーact.3（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/3259/2000007573259.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "人里はなれた山奥で、相次ぐ謎の失踪事件。兄の行方を探す少女と、保安官その他一名。闇夜に潜む深紅の巨体に、彼らは打ち勝てるのか!?動画小説・第3弾、ここに飛び立つ！",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜6巻無料",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F78cb08d45fde3363a422a2b72ad14530%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003328811",
+    "title": "マイティ・スレイヴァーact.4（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/7320/2000007577320.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "採掘工・スミス一家が湖底で見つけた、移民船の落とし物。お宝目当ての盗賊と、正義を守る保安官。追いつ追われつ繰り広げられる、激しいバトルの行く末は!?動画小説・第4弾、全力疾走いたします！",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜6巻無料",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F91ec3774064e311fba4386ae358bb70f%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003333891",
+    "title": "マイティ・スレイヴァーact.5（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/3220/2000007583220.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "無人の荒野で山籠もりする二人の青年、ユゥトとビクター。奇怪な姿のスレイヴァーと、それに追われる謎めいた少女。問答無用の大鎌が、大地を切り裂き火花を散らす！動画小説・第5弾、いよいよ発進！",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜6巻無料",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F866cbb97ea6630a297e2810836a65ce5%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230003338117",
+    "title": "マイティ・スレイヴァーact.6（無料見本版）",
+    "author": "土堂コォジ",
+    "publisher": "土堂コォジ",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/3874/2000007603874.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "上級保安官を目指し、研修に励むスレイヴァー使い三人。立ち塞がるは鬼教官の美女二人、および粗暴な闖入者。動画小説・第6弾、ラストスパートです!!",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1〜6巻無料",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F4cf772468585392686e37681efc19c0a%2F",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-1230001532395",
+    "title": "白亜色の涙　１",
+    "author": "阿都",
+    "publisher": "阿都",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/0337/2000004950337.jpg?_ex=200x200",
+    "genre": "少年・青年漫画",
+    "description": "一族に受け継がれてきた特殊な力『道しるべ』をもった二人は、不思議な事件にかかわっていく。ジュブナイル伝奇シリーズ、第1巻。序章から第2話まで収録。巻末小話付き。",
+    "endDate": null,
+    "updatedAt": "2026-06-22T08:38:54.682Z",
+    "volsFreeText": "1巻 80%OFF",
+    "stores": {
+      "rakuten": {
+        "url": "https://hb.afl.rakuten.co.jp/hgc/g00reb4n.lbfgh789.g00reb4n.lbfgi8c6/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2Frk%2F2d19953a2b6f325e9d5f0b2538e35397%2F",
+        "originalPrice": 500,
+        "salePrice": 100,
+        "discountRate": 80
       }
     }
   }
