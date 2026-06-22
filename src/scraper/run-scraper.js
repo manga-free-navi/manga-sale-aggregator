@@ -112,6 +112,20 @@ async function run() {
     allBooks = allBooks.concat(seimorCache);
   }
   try {
+    // 各書籍の stores から各種情報を抽出するヘルパー
+    function isBookFree(book) {
+      return Object.values(book.stores || {}).some(s => s && s.salePrice === 0);
+    }
+
+    function isBookSale(book) {
+      return Object.values(book.stores || {}).some(s => s && s.salePrice > 0 && s.discountRate >= 30);
+    }
+
+    function getMaxDiscountRate(book) {
+      const rates = Object.values(book.stores || {}).map(s => s ? s.discountRate : 0);
+      return rates.length > 0 ? Math.max(...rates) : 0;
+    }
+
     // 3. 同一作品（同一巻）のストア間名寄せマージ処理
     const mergedMap = new Map();
     
@@ -267,7 +281,9 @@ async function run() {
     const blacklist = [
       'ジャーロ', 'コバルト文庫', '小説', '文庫', 'ライトノベル', 'ラノベ', 
       '雑誌', '体験版', 'ダイジェスト', '試し読み集', '試し読み版', '読本', 
-      'カタログ', 'パンフレット', '画集', 'ファンブック', '設定資料集'
+      'カタログ', 'パンフレット', '画集', 'ファンブック', '設定資料集',
+      '試し読み', '合本', 'ブックレット', '小冊子', 'エッセイ', '自伝', 'ルポ',
+      '単行本', '新書', 'ノベル', 'アンソロジー', '短編集', '羊の平和', '「さあ、どんでん返しだ。」'
     ];
 
     // ブラックリストによる非コミック等の除外
@@ -299,25 +315,93 @@ async function run() {
 
     const nonSingleVolumeFreeBooks = [];
     seriesMap.forEach((group, seriesKey) => {
-      const vols = group.map(b => b.volumeNum).filter(v => v !== null);
+      // 巻数（数字）のリストを抽出してソート
+      const vols = group.map(b => b.volumeNum).filter(v => v !== null).sort((a, b) => a - b);
+      
+      // 有料本と無料本の仕分け（ストア情報を正しく参照するヘルパーを使用）
+      const freeVols = group.filter(b => isBookFree(b)).map(b => b.volumeNum).filter(v => v !== null).sort((a, b) => a - b);
+      const saleVols = group.filter(b => isBookSale(b)).map(b => b.volumeNum).filter(v => v !== null).sort((a, b) => a - b);
       
       if (vols.length > 0) {
-        // グループ内が全て1巻のみの場合
-        const onlyHasVolumeOne = vols.every(v => v === 1);
-        if (onlyHasVolumeOne) {
-          console.log(`[除外] 1巻のみ無料のため除外: ${group[0].title} (著者: ${group[0].author})`);
-          return; // グループ全体を除外
+        // 無料本があり、それが1巻のみである場合
+        const hasFree = group.some(b => isBookFree(b));
+        if (hasFree) {
+          const onlyHasVolumeOneFree = freeVols.length === 1 && freeVols[0] === 1;
+          // 無料本が1巻のみで、かつ有料セール本（30%以上）も他に伴っていない場合
+          if (onlyHasVolumeOneFree && saleVols.length === 0) {
+            console.log(`[除外] 1巻のみ無料（他巻セールなし）のため除外: ${group[0].title} (著者: ${group[0].author})`);
+            return; // シリーズ全体を除外
+          }
         }
       } else {
-        // 巻数が一切判定できなかったシリーズは、小説や単発本（非コミック）の可能性が高いため丸ごと除外
+        // 巻数が一切判定できなかったシリーズは、小説や単発本の可能性が高いため丸ごと除外
         console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
         return;
       }
       
-      // 除外条件に引っかからなかった本を結果用配列にコピー
-      group.forEach(b => {
-        const { volumeNum, ...cleanBook } = b;
-        nonSingleVolumeFreeBooks.push(cleanBook);
+      // シリーズ状態を示すテキストの自動生成 (volsFreeText)
+      let volsFreeText = "";
+      if (freeVols.length > 0 && saleVols.length === 0) {
+        // すべて無料の場合
+        const minVol = freeVols[0];
+        const maxVol = freeVols[freeVols.length - 1];
+        if (minVol === maxVol) {
+          volsFreeText = `${minVol}巻無料`;
+        } else {
+          volsFreeText = `${minVol}〜${maxVol}巻無料`;
+        }
+      } else if (freeVols.length === 0 && saleVols.length > 0) {
+        // すべてセール（有料）の場合
+        const maxDiscount = Math.max(...group.map(b => getMaxDiscountRate(b)));
+        const minVol = saleVols[0];
+        const maxVol = saleVols[saleVols.length - 1];
+        if (minVol === maxVol) {
+          volsFreeText = `${minVol}巻 ${maxDiscount}%OFF`;
+        } else {
+          volsFreeText = `${minVol}〜${maxVol}巻 ${maxDiscount}%OFF〜`;
+        }
+      } else if (freeVols.length > 0 && saleVols.length > 0) {
+        // 無料とセール混在の場合
+        const minFreeVol = freeVols[0];
+        const maxFreeVol = freeVols[freeVols.length - 1];
+        let freePart = minFreeVol === maxFreeVol ? `${minFreeVol}巻無料` : `${minFreeVol}〜${maxFreeVol}巻無料`;
+        volsFreeText = `${freePart} ＆ 続巻セール`;
+      }
+      
+      // シリーズ内の全巻を保存リストに追加（フロントの巻数選択UIと連動させるため）
+      group.forEach(book => {
+        // タイトルから不要な装飾を除去
+        const cleanedTitle = book.title.replace(/【期間限定無料】|【期間限定無料お試し版】|【期間限定無料冊子】|【セール】/g, '').trim();
+        
+        // 既存オブジェクトのクリーンアップと volsFreeText のセット
+        const mergedBook = {
+          id: book.id,
+          title: cleanedTitle,
+          author: book.author,
+          publisher: book.publisher,
+          imageUrl: book.imageUrl,
+          genre: book.genre,
+          description: book.description,
+          endDate: book.endDate,
+          updatedAt: book.updatedAt,
+          volsFreeText: volsFreeText,
+          stores: { ...book.stores } // すべてのストア情報をマージされた状態で維持
+        };
+        
+        // 重複チェックして保存
+        const existing = nonSingleVolumeFreeBooks.find(b => b.id === mergedBook.id);
+        if (existing) {
+          // すでに同一巻が存在する場合、店舗データをマージ
+          existing.stores = { ...existing.stores, ...mergedBook.stores };
+          if (!existing.imageUrl && mergedBook.imageUrl) {
+            existing.imageUrl = mergedBook.imageUrl;
+          }
+          if ((!existing.description || existing.description.includes('お試し')) && mergedBook.description && !mergedBook.description.includes('お試し')) {
+            existing.description = mergedBook.description;
+          }
+        } else {
+          nonSingleVolumeFreeBooks.push(mergedBook);
+        }
       });
     });
 

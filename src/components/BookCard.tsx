@@ -19,6 +19,7 @@ export interface Book {
   endDate: string | null;
   description: string;
   updatedAt: string;
+  volsFreeText?: string;
   stores: {
     rakuten?: StoreDeal;
     seimor?: StoreDeal;
@@ -345,6 +346,25 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
       {/* コンテンツエリア */}
       <div className="card-content">
         <span className="book-genre">{currentBook.genre}</span>
+
+        {/* シリーズ巻数/セール状態バッジ */}
+        {currentBook.volsFreeText && (
+          <span className="series-vols-badge" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
+            color: '#ffffff',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            padding: '0.2rem 0.5rem',
+            borderRadius: '4px',
+            marginLeft: '0.5rem',
+            verticalAlign: 'middle',
+            boxShadow: '0 0 8px rgba(168, 85, 247, 0.4)'
+          }}>
+            ⚡ {currentBook.volsFreeText}
+          </span>
+        )}
         
         {matchedAnime && (
           <div className="anime-sync-badge" style={{

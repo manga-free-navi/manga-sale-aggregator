@@ -4,9 +4,34 @@ const axios = require('axios');
  * 楽天Kobo電子書籍検索APIを利用して無料漫画情報を取得するパーサー
  * @param {string} appId - 楽天デベロッパーID (Application ID)
  * @param {string} accessKey - 楽天アクセスキー (Access Key)
- * @param {string} affiliateId - 楽天アフィリエイトID (オプション)
- * @returns {Promise<Array>} 収集された漫画データの配列
+ * @param {s/**
+ * タイトルから割引率（％）を抽出するヘルパー関数
+ * @param {string} title - 書籍のタイトル
+ * @returns {number|null} 抽出された割引率。見つからない場合はnull
  */
+function extractDiscountRateFromTitle(title) {
+  let t = title.replace(/％/g, '%');
+  
+  // 30% OFF, 50%OFF などのパターン
+  let match = t.match(/(\d+)\s*%\s*OFF/i);
+  if (match) return parseInt(match[1], 10);
+  
+  // 30%割引, 30%引き などのパターン
+  match = t.match(/(\d+)\s*%\s*割引/);
+  if (match) return parseInt(match[1], 10);
+  match = t.match(/(\d+)\s*%\s*引き/);
+  if (match) return parseInt(match[1], 10);
+  
+  // 「半額」パターン
+  if (t.includes('半額')) return 50;
+  
+  // 「3割引」などのパターン
+  match = t.match(/(\d+)\s*割引き?/);
+  if (match) return parseInt(match[1], 10) * 10;
+  
+  return null;
+}
+
 async function parseRakuten(appId, accessKey, affiliateId) {
   const books = [];
 
@@ -84,18 +109,18 @@ async function parseRakuten(appId, accessKey, affiliateId) {
           }
           console.log(`[楽天Kobo] ジャンル ${genre.name} - ページ ${page}: APIより ${items.length} 件を取得しました。`);
 
-          let hasNonFreeItem = false;
-
           items.forEach((itemWrapper) => {
             const item = itemWrapper.Item;
             if (!item) return;
 
             const salePrice = item.itemPrice;
-            // 0円（無料）以外の有料本はすべて除外する
-            if (salePrice !== 0) {
-              hasNonFreeItem = true;
-              return;
-            }
+            const discountRateFromTitle = extractDiscountRateFromTitle(item.title);
+            
+            const isFree = (salePrice === 0);
+            const isHighDiscount = (salePrice > 0 && discountRateFromTitle !== null && discountRateFromTitle >= 30);
+
+            // 無料でもなく、3割以上の割引でもない本はすべて除外する
+            if (!isFree && !isHighDiscount) return;
 
             let endDate = null;
             if (item.salesEndDate) {
@@ -104,8 +129,19 @@ async function parseRakuten(appId, accessKey, affiliateId) {
             }
 
             const finalUrl = item.affiliateUrl || item.itemUrl;
-            const originalPrice = 500; // 無料本なので、想定の元価格を一律500円として扱う
-            const discountRate = 100;  // 0円なので100%OFF
+            
+            // 価格と割引率の算出
+            let originalPrice = 500;
+            let discountRate = 100;
+            
+            if (isFree) {
+              discountRate = 100;
+              originalPrice = 500; // 想定の元価格を一律500円とする
+            } else {
+              discountRate = discountRateFromTitle;
+              // セール価格と割引率から元価格を逆算
+              originalPrice = Math.round(salePrice / (1 - discountRate / 100));
+            }
 
             // 重複追加の防止
             const id = `rakuten-${item.itemNumber || item.title.substring(0, 10)}`;
@@ -124,16 +160,10 @@ async function parseRakuten(appId, accessKey, affiliateId) {
               url: finalUrl,
               genre: genre.id === '101902' ? '少女漫画' : '少年・青年漫画',
               endDate: endDate,
-              description: item.itemCaption || `${item.title}の期間限定無料お試し版です。`,
+              description: item.itemCaption || `${item.title}の期間限定割引・無料お試し版です。`,
               updatedAt: new Date().toISOString()
             });
           });
-
-          if (hasNonFreeItem) {
-            console.log(`[楽天Kobo] ジャンル ${genre.name} - ページ ${page}: 0円以外の有料書籍が検出されたため、このジャンルの取得を終了します。`);
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            break;
-          }
         } else {
           console.log(`[楽天Kobo] ジャンル ${genre.name} - ページ ${page}: レスポンスが不正です。`);
           await new Promise(resolve => setTimeout(resolve, 3000));
