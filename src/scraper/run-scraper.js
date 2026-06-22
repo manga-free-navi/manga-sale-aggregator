@@ -254,6 +254,15 @@ async function run() {
       t = t.replace(/【[^】]*】/g, ' ');
       t = t.replace(/\[[^\]]*\]/g, ' ');
       
+      // 先にかっこ内の割引率表記やノイズを消去する
+      t = t.replace(/\([^\)]*\)/g, ' ');
+      t = t.replace(/（[^）]*）/g, ' ');
+      t = t.replace(/期間限定/g, ' ');
+      t = t.replace(/無料/g, ' ');
+      t = t.replace(/セール/g, ' ');
+      t = t.replace(/お試し/g, ' ');
+      t = t.replace(/試し読み/g, ' ');
+      
       // act.X, vol.X, no.X, #X などの巻数ワード＋数字を消去
       t = t.replace(/(?:act|vol|volume|no|#)\.?\s*\d+/i, ' ');
       
@@ -266,15 +275,6 @@ async function run() {
       // 末尾の数字や単独の数字を消去
       t = t.replace(/\s+\d+\s*$/g, ' ');
       t = t.replace(/\d+\s*$/g, ' ');
-      
-      // 一般的なノイズ除去
-      t = t.replace(/\([^\)]*\)/g, ' ');
-      t = t.replace(/（[^）]*）/g, ' ');
-      t = t.replace(/期間限定/g, ' ');
-      t = t.replace(/無料/g, ' ');
-      t = t.replace(/セール/g, ' ');
-      t = t.replace(/お試し/g, ' ');
-      t = t.replace(/試し読み/g, ' ');
       t = t.replace(/\s+/g, '');
       
       const cleanedAuthor = (author || '不明').replace(/\s+/g, '');
