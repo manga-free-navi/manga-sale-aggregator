@@ -530,14 +530,14 @@ button, input, select {
   box-shadow: 0 0 15px rgba(6, 199, 85, 0.4);
 }
 
-/* 12. PR TIMES */
-.btn-prtimes {
-  background: linear-gradient(135deg, #0052ad, #003775);
+/* 12. BOOK☆WALKER */
+.btn-bookwalker {
+  background: linear-gradient(135deg, #ff7f00, #d44b00);
   border-color: transparent;
   color: #fff !important;
 }
-.btn-prtimes:hover {
-  box-shadow: 0 0 15px rgba(0, 82, 173, 0.4);
+.btn-bookwalker:hover {
+  box-shadow: 0 0 15px rgba(255, 127, 0, 0.4);
 }
 
 

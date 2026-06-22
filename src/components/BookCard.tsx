@@ -277,8 +277,8 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'シーモア', btnClass: 'btn-seimor', action: '読む' };
       case 'amazon':
         return { name: 'Kindle', btnClass: 'btn-kindle', action: '読む' };
-      case 'prtimes':
-        return { name: 'PR TIMES', btnClass: 'btn-prtimes', action: '詳細' };
+      case 'bookwalker':
+        return { name: 'BOOK☆WALKER', btnClass: 'btn-bookwalker', action: '読む' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }

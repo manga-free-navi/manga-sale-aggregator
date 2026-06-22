@@ -5,7 +5,7 @@ require('dotenv').config();
 // パーサーのインポート
 const { parseRakuten } = require('./parsers/rakuten');
 const { parseSeimor } = require('./parsers/seimor');
-const { parsePrtimes } = require('./parsers/prtimes');
+const { parseBookwalker } = require('./parsers/bookwalker');
 
 /**
  * すべてのストアからセール・無料情報を収集して保存するエントリーポイント
@@ -113,18 +113,18 @@ async function run() {
     allBooks = allBooks.concat(seimorCache);
   }
 
-  // 2.3 PR TIMES から無料公開情報を収集
+  // 2.3 BOOK☆WALKER から無料マンガ情報を収集
   try {
-    const prtimesBooks = await parsePrtimes();
-    if (prtimesBooks && prtimesBooks.length > 0) {
-      console.log(`[PR TIMES] ${prtimesBooks.length} 件のデータを新規取得しました。`);
-      allBooks = allBooks.concat(prtimesBooks);
+    const bookwalkerBooks = await parseBookwalker();
+    if (bookwalkerBooks && bookwalkerBooks.length > 0) {
+      console.log(`[BOOK☆WALKER] ${bookwalkerBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(bookwalkerBooks);
     } else {
       throw new Error('取得件数が0件です');
     }
-  } catch (prtimesError) {
-    console.error('[PR TIMES] 取得に失敗したため、キャッシュデータから復元します:', prtimesError.message);
-    const prtimesCache = cachedBooks.filter(b => Object.keys(b.stores).includes('prtimes')).map(b => {
+  } catch (bookwalkerError) {
+    console.error('[BOOK☆WALKER] 取得に失敗したため、キャッシュデータから復元します:', bookwalkerError.message);
+    const bookwalkerCache = cachedBooks.filter(b => Object.keys(b.stores).includes('bookwalker')).map(b => {
       return {
         id: b.id,
         title: b.title,
@@ -135,15 +135,15 @@ async function run() {
         description: b.description,
         endDate: b.endDate,
         updatedAt: b.updatedAt,
-        store: 'prtimes',
-        url: b.stores.prtimes.url,
-        originalPrice: b.stores.prtimes.originalPrice,
-        salePrice: b.stores.prtimes.salePrice,
-        discountRate: b.stores.prtimes.discountRate
+        store: 'bookwalker',
+        url: b.stores.bookwalker.url,
+        originalPrice: b.stores.bookwalker.originalPrice,
+        salePrice: b.stores.bookwalker.salePrice,
+        discountRate: b.stores.bookwalker.discountRate
       };
     });
-    console.log(`[PR TIMES] キャッシュから ${prtimesCache.length} 件を復元しました。`);
-    allBooks = allBooks.concat(prtimesCache);
+    console.log(`[BOOK☆WALKER] キャッシュから ${bookwalkerCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(bookwalkerCache);
   }
 
   try {
@@ -222,6 +222,20 @@ async function run() {
         salePrice: book.salePrice,
         discountRate: book.discountRate
       };
+
+      // Kindle（Amazon）用アフィリエイト検索リンクを自動生成してストアに追加
+      if (!mergedBook.stores['amazon']) {
+        const cleanedTitle = mergedBook.title.replace(/【[^】]*】/g, '').replace(/\[[^\]]*\]/g, '').trim();
+        const encodedTitle = encodeURIComponent(cleanedTitle);
+        const amazonAssocId = process.env.AMAZON_ASSOCIATE_ID || 'dummy-22';
+        const kindleUrl = `https://www.amazon.co.jp/s?k=${encodedTitle}&i=digital-text&tag=${amazonAssocId}`;
+        mergedBook.stores['amazon'] = {
+          url: kindleUrl,
+          originalPrice: book.originalPrice || 500,
+          salePrice: book.salePrice,
+          discountRate: book.discountRate
+        };
+      }
       
       // 画像がより高画質なものがあれば上書き
       if (!mergedBook.imageUrl && book.imageUrl) {
@@ -424,10 +438,10 @@ async function run() {
           }
         }
       } else {
-        // PR TIMESのキャンペーン情報は巻数を持たないため、除外を回避する
-        const isPrtimesCampaign = group.some(b => Object.keys(b.stores).includes('prtimes'));
-        if (isPrtimesCampaign) {
-          console.log(`[PR TIMESキャンペーン維持] ${group[0].title}`);
+        // BOOK☆WALKERのキャンペーン情報は巻数を持たない場合、除外を回避する
+        const isBookwalkerCampaign = group.some(b => Object.keys(b.stores).includes('bookwalker'));
+        if (isBookwalkerCampaign) {
+          console.log(`[BOOK☆WALKERキャンペーン維持] ${group[0].title}`);
         } else {
           // 巻数が一切判定できなかったシリーズは、小説や単発本の可能性が高いため丸ごと除外
           console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
@@ -437,7 +451,7 @@ async function run() {
       
       // シリーズ状態を示すテキストの自動生成 (volsFreeText)
       let volsFreeText = "";
-      if (group.some(b => Object.keys(b.stores).includes('prtimes'))) {
+      if (group.some(b => Object.keys(b.stores).includes('bookwalker'))) {
         volsFreeText = "無料キャンペーン";
       } else if (freeVols.length > 0 && saleVols.length === 0) {
         // すべて無料の場合
