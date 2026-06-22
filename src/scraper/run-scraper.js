@@ -191,13 +191,145 @@ async function run() {
     const finalBooks = Array.from(mergedMap.values());
     console.log(`[名寄せ] ストア間で重複する書籍を統合: ${allBooks.length}件 -> ${finalBooks.length}件`);
 
+    // 3.5 「1巻のみ無料」の作品を除外するフィルタリング処理
+    
+    // タイトルから巻数（数字）を抽出するヘルパー
+    function extractVolumeNumber(title) {
+      // 全角数字を半角に正規化
+      let t = title.replace(/[０-９]/g, function(s) {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+      });
+      
+      t = t.replace(/【[^】]*】/g, ' ').replace(/\[[^\]]*\]/g, ' ');
+      
+      // 第X巻、X巻、X話、X作目
+      let match = t.match(/第?\s*(\d+)\s*[巻話作]/);
+      if (match) return parseInt(match[1], 10);
+      
+      // かっこ内の数字 (X) や （X）
+      match = t.match(/[\(（](\d+)[\)）]/);
+      if (match) return parseInt(match[1], 10);
+      
+      // act.X や vol.X などの表記
+      match = t.match(/(?:act|vol|volume|no|#)\.?\s*(\d+)/i);
+      if (match) return parseInt(match[1], 10);
+      
+      // 末尾の数字（スペースのあとの数字など）
+      match = t.match(/\s+(\d+)\s*$/);
+      if (match) return parseInt(match[1], 10);
+      
+      // 単独の数字（タイトルの最後にある数字など）
+      match = t.match(/(\d+)\s*$/);
+      if (match) return parseInt(match[1], 10);
+      
+      return null;
+    }
+
+    // シリーズをグループ化するためのベースキー作成用（巻数表記を極力排除）
+    function getSeriesBaseKey(title, author) {
+      let t = title;
+      // 全角数字を半角に
+      t = t.replace(/[０-９]/g, function(s) {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+      });
+      
+      t = t.replace(/【[^】]*】/g, ' ');
+      t = t.replace(/\[[^\]]*\]/g, ' ');
+      
+      // act.X, vol.X, no.X, #X などの巻数ワード＋数字を消去
+      t = t.replace(/(?:act|vol|volume|no|#)\.?\s*\d+/i, ' ');
+      
+      // 第X巻, X巻, X話, X作目 などの巻数文字を消去
+      t = t.replace(/第?\s*\d+\s*[巻話作]/g, ' ');
+      
+      // かっこ内の数字 (X) や （X） を消去
+      t = t.replace(/[\(（]\d+[\)）]/g, ' ');
+      
+      // 末尾の数字や単独の数字を消去
+      t = t.replace(/\s+\d+\s*$/g, ' ');
+      t = t.replace(/\d+\s*$/g, ' ');
+      
+      // 一般的なノイズ除去
+      t = t.replace(/\([^\)]*\)/g, ' ');
+      t = t.replace(/（[^）]*）/g, ' ');
+      t = t.replace(/期間限定/g, ' ');
+      t = t.replace(/無料/g, ' ');
+      t = t.replace(/セール/g, ' ');
+      t = t.replace(/お試し/g, ' ');
+      t = t.replace(/試し読み/g, ' ');
+      t = t.replace(/\s+/g, '');
+      
+      const cleanedAuthor = (author || '不明').replace(/\s+/g, '');
+      return `${t.toLowerCase().trim()}_${cleanedAuthor}`;
+    }
+
+    // 小説・雑誌・体験版等のブラックリストワード
+    const blacklist = [
+      'ジャーロ', 'コバルト文庫', '小説', '文庫', 'ライトノベル', 'ラノベ', 
+      '雑誌', '体験版', 'ダイジェスト', '試し読み集', '試し読み版', '読本', 
+      'カタログ', 'パンフレット', '画集', 'ファンブック', '設定資料集'
+    ];
+
+    // ブラックリストによる非コミック等の除外
+    const filteredByBlacklist = finalBooks.filter(book => {
+      const isBlacklisted = blacklist.some(word => book.title.includes(word));
+      if (isBlacklisted) {
+        console.log(`[ブラックリスト除外] ${book.title} (著者: ${book.author})`);
+      }
+      return !isBlacklisted;
+    });
+
+    // 各書籍に巻数情報を付与
+    const booksWithVol = filteredByBlacklist.map(book => {
+      return {
+        ...book,
+        volumeNum: extractVolumeNumber(book.title)
+      };
+    });
+
+    // シリーズごとにマッピング
+    const seriesMap = new Map();
+    booksWithVol.forEach(book => {
+      const seriesKey = getSeriesBaseKey(book.title, book.author);
+      if (!seriesMap.has(seriesKey)) {
+        seriesMap.set(seriesKey, []);
+      }
+      seriesMap.get(seriesKey).push(book);
+    });
+
+    const nonSingleVolumeFreeBooks = [];
+    seriesMap.forEach((group, seriesKey) => {
+      const vols = group.map(b => b.volumeNum).filter(v => v !== null);
+      
+      if (vols.length > 0) {
+        // グループ内が全て1巻のみの場合
+        const onlyHasVolumeOne = vols.every(v => v === 1);
+        if (onlyHasVolumeOne) {
+          console.log(`[除外] 1巻のみ無料のため除外: ${group[0].title} (著者: ${group[0].author})`);
+          return; // グループ全体を除外
+        }
+      } else {
+        // 巻数が一切判定できなかったシリーズは、小説や単発本（非コミック）の可能性が高いため丸ごと除外
+        console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
+        return;
+      }
+      
+      // 除外条件に引っかからなかった本を結果用配列にコピー
+      group.forEach(b => {
+        const { volumeNum, ...cleanBook } = b;
+        nonSingleVolumeFreeBooks.push(cleanBook);
+      });
+    });
+
+    console.log(`[フィルタ] 1巻のみ無料の作品を除外: ${filteredByBlacklist.length}件 -> ${nonSingleVolumeFreeBooks.length}件`);
+
     // 4. 期限切れセールの自動除外フィルタリング (JST本日以前のendDateを持つセールを除外)
     const todayStr = jstNow.toISOString().split('T')[0]; // JSTの本日 YYYY-MM-DD
-    const activeBooks = finalBooks.filter(book => {
+    const activeBooks = nonSingleVolumeFreeBooks.filter(book => {
       if (!book.endDate) return true; // 終了日の指定がないものは残す
       return book.endDate >= todayStr; // 今日以降に終了するものは残す
     });
-    console.log(`[フィルタ] 期限切れデータを自動除外: ${finalBooks.length}件 -> ${activeBooks.length}件`);
+    console.log(`[フィルタ] 期限切れデータを自動除外: ${nonSingleVolumeFreeBooks.length}件 -> ${activeBooks.length}件`);
 
     // データの保存
     if (activeBooks.length > 0) {

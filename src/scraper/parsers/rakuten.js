@@ -23,93 +23,125 @@ async function parseRakuten(appId, accessKey, affiliateId) {
   const url = 'https://openapi.rakuten.co.jp/services/api/Kobo/EbookSearch/20170426';
 
   try {
-    console.log(`[楽天Kobo] APIリクエスト開始 (少年・青年[101901] ＆ 少女・レディース[101902]、各2ページ取得)`);
+    console.log(`[楽天Kobo] APIリクエスト開始 (少年・青年[101901] ＆ 少女・レディース[101902]、価格の安い順)`);
 
-    const genreIds = ['101901', '101902'];
+    const genres = [
+      { id: '101901', name: '少年・青年漫画', maxPage: 8 },
+      { id: '101902', name: '少女・レディース漫画', maxPage: 5 }
+    ];
+    const keyword = '無料';
 
-    for (const genreId of genreIds) {
-      console.log(`[楽天Kobo] ジャンル ID: ${genreId} の収集を開始します...`);
-      for (let page = 1; page <= 4; page++) {
+    for (const genre of genres) {
+      console.log(`[楽天Kobo] ジャンル: ${genre.name} (${genre.id}) の収集を開始します...`);
+      for (let page = 1; page <= genre.maxPage; page++) {
         const params = {
           applicationId: appId,
           accessKey: accessKey,
           format: 'json',
-          keyword: '無料',            // 「無料」コミックを取得
-          koboGenreId: genreId,      // 有効なコミックサブジャンルID
-          hits: 30,                  // 1回あたりの取得件数 (最大30)
-          page: page,                // ページ番号
-          sort: 'sales',             // 売上順 (人気順)
+          keyword: keyword,
+          koboGenreId: genre.id,
+          hits: 30,
+          page: page,
+          sort: '+itemPrice', // 価格の安い順ソート (0円本を優先収集)
         };
 
         if (affiliateId && affiliateId !== 'dummy_affiliate_id') {
           params.affiliateId = affiliateId;
         }
 
-        try {
-          const response = await axios.get(url, {
-            params,
-            headers: {
-              'Referer': 'https://github.io/',
-              'Referrer': 'https://github.io/',
-              'Origin': 'https://github.io',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            },
-            timeout: 10000
-          });
-
-          if (response.data && response.data.Items) {
-            const items = response.data.Items;
-            if (items.length === 0) {
-              console.log(`[楽天Kobo] ジャンル ${genreId} - ページ ${page}: これ以上のデータはありません。ループを終了します。`);
+        let response = null;
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            response = await axios.get(url, {
+              params,
+              headers: {
+                'Referer': 'https://github.io/',
+                'Origin': 'https://github.io',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+              },
+              timeout: 10000
+            });
+            break; // リクエスト成功
+          } catch (err) {
+            if (err.response && err.response.status === 429) {
+              console.warn(`[楽天Kobo] Page ${page}: 429エラーが発生。10秒待機してリトライします... (残りリトライ: ${retries - 1})`);
+              await new Promise(resolve => setTimeout(resolve, 10000));
+              retries--;
+            } else {
+              console.error(`[楽天Kobo] Page ${page} の取得に失敗:`, err.message);
               break;
             }
-            console.log(`[楽天Kobo] ジャンル ${genreId} - ページ ${page}: APIより ${items.length} 件のアイテムを取得しました。`);
+          }
+        }
 
-            items.forEach((itemWrapper) => {
-              const item = itemWrapper.Item;
-              if (!item) return;
-
-              const salePrice = item.itemPrice;
-              // 0円（無料）以外の有料本はすべて除外する
-              if (salePrice !== 0) return;
-
-              let endDate = null;
-              if (item.salesEndDate) {
-                const datePart = item.salesEndDate.split(' ')[0];
-                endDate = datePart.replace(/\//g, '-');
-              }
-
-              const finalUrl = item.affiliateUrl || item.itemUrl;
-              const originalPrice = 500; // 無料本なので、想定の元価格を一律500円として扱う
-              const discountRate = 100;  // 0円なので100%OFF
-
-              books.push({
-                id: `rakuten-${item.itemNumber || item.title.substring(0, 10)}`,
-                title: item.title,
-                author: item.author || '不明',
-                publisher: item.publisherName || '楽天Kobo',
-                imageUrl: item.largeImageUrl || item.mediumImageUrl || '',
-                store: 'rakuten',
-                originalPrice: originalPrice,
-                salePrice: salePrice,
-                discountRate: discountRate,
-                url: finalUrl,
-                genre: genreId === '101902' ? '少女漫画' : '少年・青年漫画',
-                endDate: endDate,
-                description: item.itemCaption || `${item.title}の期間限定無料お試し版です。`,
-                updatedAt: new Date().toISOString()
-              });
-            });
-          } else {
+        if (response && response.data && response.data.Items) {
+          const items = response.data.Items;
+          if (items.length === 0) {
+            console.log(`[楽天Kobo] ジャンル ${genre.name} - ページ ${page}: これ以上のデータはありません。`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
             break;
           }
-        } catch (pageError) {
-          console.error(`[楽天Kobo] ジャンル ${genreId} - ページ ${page} の取得に失敗しました:`, pageError.message);
+          console.log(`[楽天Kobo] ジャンル ${genre.name} - ページ ${page}: APIより ${items.length} 件を取得しました。`);
+
+          let hasNonFreeItem = false;
+
+          items.forEach((itemWrapper) => {
+            const item = itemWrapper.Item;
+            if (!item) return;
+
+            const salePrice = item.itemPrice;
+            // 0円（無料）以外の有料本はすべて除外する
+            if (salePrice !== 0) {
+              hasNonFreeItem = true;
+              return;
+            }
+
+            let endDate = null;
+            if (item.salesEndDate) {
+              const datePart = item.salesEndDate.split(' ')[0];
+              endDate = datePart.replace(/\//g, '-');
+            }
+
+            const finalUrl = item.affiliateUrl || item.itemUrl;
+            const originalPrice = 500; // 無料本なので、想定の元価格を一律500円として扱う
+            const discountRate = 100;  // 0円なので100%OFF
+
+            // 重複追加の防止
+            const id = `rakuten-${item.itemNumber || item.title.substring(0, 10)}`;
+            if (books.some(b => b.id === id)) return;
+
+            books.push({
+              id: id,
+              title: item.title,
+              author: item.author || '不明',
+              publisher: item.publisherName || '楽天Kobo',
+              imageUrl: item.largeImageUrl || item.mediumImageUrl || '',
+              store: 'rakuten',
+              originalPrice: originalPrice,
+              salePrice: salePrice,
+              discountRate: discountRate,
+              url: finalUrl,
+              genre: genre.id === '101902' ? '少女漫画' : '少年・青年漫画',
+              endDate: endDate,
+              description: item.itemCaption || `${item.title}の期間限定無料お試し版です。`,
+              updatedAt: new Date().toISOString()
+            });
+          });
+
+          if (hasNonFreeItem) {
+            console.log(`[楽天Kobo] ジャンル ${genre.name} - ページ ${page}: 0円以外の有料書籍が検出されたため、このジャンルの取得を終了します。`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            break;
+          }
+        } else {
+          console.log(`[楽天Kobo] ジャンル ${genre.name} - ページ ${page}: レスポンスが不正です。`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
           break;
         }
 
-        // リクエスト間のウェイト (1秒)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // レートリミット回避のため、リクエストごとに必ず3.0秒のウェイトを設ける
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     }
 
@@ -125,13 +157,14 @@ async function parseRakuten(appId, accessKey, affiliateId) {
  * 開発テスト用のモックデータを生成する関数
  */
 function generateMockRakutenData() {
+  const validImageUrl = "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200";
   return [
     {
       id: "rakuten-mock-1",
       title: "【期間限定無料】呪術廻戦 1",
       author: "芥見下々",
       publisher: "集英社",
-      imageUrl: "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/5480/9784088815169.jpg?_ex=200x200",
+      imageUrl: validImageUrl,
       store: "rakuten",
       originalPrice: 480,
       salePrice: 0,
@@ -147,7 +180,7 @@ function generateMockRakutenData() {
       title: "【期間限定無料】怪獣8号 1",
       author: "松本直也",
       publisher: "集英社",
-      imageUrl: "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/0285/9784088826158.jpg?_ex=200x200",
+      imageUrl: validImageUrl,
       store: "rakuten",
       originalPrice: 500,
       salePrice: 0,
@@ -163,7 +196,7 @@ function generateMockRakutenData() {
       title: "【セール】アオハライド 1 (50% OFF)",
       author: "咲坂伊緒",
       publisher: "集英社",
-      imageUrl: "https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/3725/9784088466477.jpg?_ex=200x200",
+      imageUrl: validImageUrl,
       store: "rakuten",
       originalPrice: 480,
       salePrice: 240,
