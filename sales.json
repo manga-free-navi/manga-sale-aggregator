@@ -1,21 +1,141 @@
 [
   {
-    "id": "rakuten-mock-3",
-    "title": "アオハライド 1 (50% OFF)",
+    "id": "rakuten-mock-jjk-1",
+    "title": "呪術廻戦 1",
+    "author": "芥見下々",
+    "publisher": "集英社",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
+    "genre": "少年漫画",
+    "description": "類稀なる身体能力を持つ高校生・虎杖悠仁は、ある日学校に眠る「呪物」の封印が解かれたことで、呪いを巡る戦いに身を投じることになる。期間限定無料お試し版！",
+    "endDate": "2026-06-30",
+    "updatedAt": "2026-06-22T06:53:44.624Z",
+    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "stores": {
+      "rakuten": {
+        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd01/",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-mock-jjk-2",
+    "title": "呪術廻戦 2",
+    "author": "芥見下々",
+    "publisher": "集英社",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
+    "genre": "少年漫画",
+    "description": "少年漫画の王道！呪術廻戦第2巻セール中！",
+    "endDate": "2026-06-30",
+    "updatedAt": "2026-06-22T06:53:44.624Z",
+    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "stores": {
+      "rakuten": {
+        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd02/",
+        "originalPrice": 500,
+        "salePrice": 240,
+        "discountRate": 52
+      }
+    }
+  },
+  {
+    "id": "rakuten-mock-kj8-1",
+    "title": "怪獣8号 1",
+    "author": "松本直也",
+    "publisher": "集英社",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
+    "genre": "少年漫画",
+    "description": "怪獣発生率が世界屈指の日本。夢破れ怪獣専門清掃業者で働いていたカフカの身体が怪獣化し、「怪獣8号」と呼ばれる討伐対象になってしまう──！期間限定無料お試し版！",
+    "endDate": "2026-06-28",
+    "updatedAt": "2026-06-22T06:53:44.624Z",
+    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "stores": {
+      "rakuten": {
+        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd11/",
+        "originalPrice": 350,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-mock-kj8-2",
+    "title": "怪獣8号 2",
+    "author": "松本直也",
+    "publisher": "集英社",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
+    "genre": "少年漫画",
+    "description": "話題沸騰の怪獣アクション、第2巻セール中！",
+    "endDate": "2026-06-28",
+    "updatedAt": "2026-06-22T06:53:44.624Z",
+    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "stores": {
+      "rakuten": {
+        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd12/",
+        "originalPrice": 350,
+        "salePrice": 350,
+        "discountRate": 30
+      }
+    }
+  },
+  {
+    "id": "rakuten-mock-aoharu-1",
+    "title": "アオハライド 1",
     "author": "咲坂伊緒",
     "publisher": "集英社",
     "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
     "genre": "少女漫画",
-    "description": "高校1年生の双葉は、中学時代に転校してしまった初恋の相手「田中くん」と再会する。しかし、彼は名前を「馬渕」に変え、性格もすっかり変わっていた。空白の3年を経て、再び動き出す二人の恋。人気の青春ラブストーリー！",
+    "description": "高校1年生の双葉は、中学時代に転校してしまった初恋の相手「田中くん」と再会する。期間限定無料お試し版！",
     "endDate": "2026-07-02",
-    "updatedAt": "2026-06-22T06:25:51.968Z",
-    "volsFreeText": "1巻 52%OFF",
+    "updatedAt": "2026-06-22T06:53:44.624Z",
+    "volsFreeText": "1巻無料 ＆ 続巻セール",
     "stores": {
       "rakuten": {
-        "url": "https://books.rakuten.co.jp/rb/11193725/?scid=af_pc_etc&sc2id=af_101_0_0",
+        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd21/",
+        "originalPrice": 500,
+        "salePrice": 0,
+        "discountRate": 100
+      }
+    }
+  },
+  {
+    "id": "rakuten-mock-aoharu-2",
+    "title": "アオハライド 2 (50% OFF)",
+    "author": "咲坂伊緒",
+    "publisher": "集英社",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
+    "genre": "少女漫画",
+    "description": "空白の3年を経て、再び動き出す二人の恋。人気の青春ラブストーリー、第2巻セール！",
+    "endDate": "2026-07-02",
+    "updatedAt": "2026-06-22T06:53:44.624Z",
+    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "stores": {
+      "rakuten": {
+        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd22/",
         "originalPrice": 500,
         "salePrice": 240,
         "discountRate": 52
+      }
+    }
+  },
+  {
+    "id": "rakuten-mock-aoharu-3",
+    "title": "アオハライド 3 (30% OFF)",
+    "author": "咲坂伊緒",
+    "publisher": "集英社",
+    "imageUrl": "https://thumbnail.image.rakuten.co.jp/@0_mall/rakutenkobo-ebooks/cabinet/1393/2000000181393.jpg?_ex=200x200",
+    "genre": "少女漫画",
+    "description": "揺れ動く登場人物たちの心情。アオハライド第3巻セール！",
+    "endDate": "2026-07-02",
+    "updatedAt": "2026-06-22T06:53:44.624Z",
+    "volsFreeText": "1巻無料 ＆ 続巻セール",
+    "stores": {
+      "rakuten": {
+        "url": "https://books.rakuten.co.jp/rk/56b46b2b6ab03893bb96b6b7a5a8cd23/",
+        "originalPrice": 500,
+        "salePrice": 336,
+        "discountRate": 33
       }
     }
   }
