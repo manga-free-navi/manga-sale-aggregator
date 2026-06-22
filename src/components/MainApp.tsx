@@ -19,15 +19,33 @@ interface SeriesGroup {
  * タイトルからシリーズ名（ベースタイトル）を抽出するヘルパー
  */
 function getSeriesKey(title: string): string {
-  // 1. 【期間限定無料】や【セール】などの前置タグを除去
-  let key = title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '');
+  // 全角数字を半角に正規化
+  let key = title.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
   
-  // 2. 巻数、または「X巻」「上・中・下」「前後」などを除去
-  key = key.replace(/[\s　]*(?:[\d１２３４５６７８９０]+|上|中|下|前|後)[巻話冊部]?[\s　]*$/, '');
-  key = key.replace(/[\s　]*[（(](?:[\d１２３４５6７８９０]+|上|中|下|前|後)[巻話冊部]?[）)][\s　]*$/, '');
-  key = key.replace(/[\s　]*第[\s　]*(?:[\d１２３４５６７８９０]+)[\s　]*[巻話冊]/, '');
+  // 1. 【期間限定無料】や【セール】などの前置タグや括弧内ノイズ（無料版・見本版等）を除去
+  key = key.replace(/【[^】]*】/g, ' ')
+           .replace(/\[[^\]]*\]/g, ' ')
+           .replace(/[\(（][^）\)]*(?:無料|見本|お試し|分冊|単行本)[^）\)]*[\)）]/g, ' ');
 
-  // 3. 全角スペースや特定の記号で区切られた後半部（サブタイトルなど）を切り取る
+  // 2. act.X, vol.X, no.X, #X などの巻数表記 of 除去
+  key = key.replace(/(?:act|vol|volume|no|#)\.?\s*\d+/i, ' ');
+
+  // 3. 巻数、または「X巻」「上・中・下」「前後」などを除去
+  key = key.replace(/第?\s*\d+\s*[巻話作]/g, ' ');
+  key = key.replace(/[\(（]\d+[\)）]/g, ' ');
+  key = key.replace(/[\s　]*(?:[\d]+|上|中|下|前|後)[巻話冊部]?[\s　]*$/, ' ');
+  key = key.replace(/[\s　]*[（(](?:[\d]+|上|中|下|前|後)[巻話冊部]?[）)][\s　]*$/, ' ');
+  key = key.replace(/[\s　]*第[\s　]*(?:\d+)[\s　]*[巻話冊]/, ' ');
+  key = key.replace(/\s+\d+\s*$/g, ' ');
+  key = key.replace(/\d+\s*$/g, ' ');
+
+  // ノイズワードの除去
+  const noiseWords = ['期間限定', '無料', 'セール', 'お試し', '試し読み', 'お試し版', '無料お試し版', '無料版', '無料見本版', '見本版', '分冊版'];
+  noiseWords.forEach(word => {
+    key = key.split(word).join(' ');
+  });
+
+  // 4. 全角スペースや特定の記号で区切られた後半部（サブタイトルなど）を切り取る
   const splitters = ['　', ' - ', ' — ', '：', ':'];
   for (const splitter of splitters) {
     const parts = key.split(splitter);
@@ -37,7 +55,7 @@ function getSeriesKey(title: string): string {
     }
   }
   
-  return key.trim();
+  return key.replace(/[\s　]+/g, '').trim();
 }
 
 function getBookMaxDiscount(bk: Book): number {

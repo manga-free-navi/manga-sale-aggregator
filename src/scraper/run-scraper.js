@@ -214,6 +214,10 @@ async function run() {
         return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
       });
       
+      // かっこ内の割引率表記 (50% OFF など) やお試し・見本などのノイズを事前に消去
+      t = t.replace(/[\(（]\s*\d+\s*[％%]\s*OFF\s*[\)）]/i, ' ');
+      t = t.replace(/[\(（]\s*\d+\s*[％%]\s*割引\s*[\)）]/i, ' ');
+      t = t.replace(/[\(（]\s*\d+\s*[％%]\s*引き\s*[\)）]/i, ' ');
       t = t.replace(/【[^】]*】/g, ' ').replace(/\[[^\]]*\]/g, ' ');
       
       // 第X巻、X巻、X話、X作目
@@ -295,6 +299,16 @@ async function run() {
       return !isBlacklisted;
     });
 
+    // デバッグログ：名寄せ後のセール本（有料・割引率30%以上）の件数とタイトルを出力
+    const rawSales = filteredByBlacklist.filter(b => isBookSale(b));
+    console.log(`[デバッグ] 名寄せ後のセール本（30%以上割引）の総件数: ${rawSales.length}件`);
+    if (rawSales.length > 0) {
+      console.log(`[デバッグ] セール本（最初の5件）:`);
+      rawSales.slice(0, 5).forEach(b => {
+        console.log(`  - Title: ${b.title}, Price: ${Object.values(b.stores).map(s=>s.salePrice).join(',')}, Rates: ${Object.values(b.stores).map(s=>s.discountRate).join(',')}`);
+      });
+    }
+
     // 各書籍に巻数情報を付与
     const booksWithVol = filteredByBlacklist.map(book => {
       return {
@@ -315,12 +329,53 @@ async function run() {
 
     const nonSingleVolumeFreeBooks = [];
     seriesMap.forEach((group, seriesKey) => {
+      // 1. 同一シリーズ内から通常定価（0円を除く最高販売価格）を推定
+      const prices = group.map(b => {
+        return Object.values(b.stores || {}).map(s => s ? s.salePrice : 0);
+      }).flat().filter(p => p > 0);
+      
+      let estimatedOriginalPrice = prices.length > 0 ? Math.max(...prices) : 0;
+      
+      // 推定定価が一般的なコミック定価（350円）より低い場合、セール価格しか取得できていないと判断し、標準定価（500円）を適用
+      if (estimatedOriginalPrice > 0 && estimatedOriginalPrice < 350) {
+        estimatedOriginalPrice = 500;
+      }
+      
+      // 2. 推定された定価を元に、各巻の割引率 (discountRate) を逆算・補正する
+      group.forEach(book => {
+        if (!book.stores) return;
+        Object.keys(book.stores).forEach(storeKey => {
+          const storeData = book.stores[storeKey];
+          if (!storeData) return;
+          
+          if (storeData.salePrice === 0) {
+            storeData.discountRate = 100;
+            storeData.originalPrice = estimatedOriginalPrice > 0 ? estimatedOriginalPrice : 500;
+          } else if (estimatedOriginalPrice > 0 && storeData.salePrice < estimatedOriginalPrice) {
+            // 定価より販売価格が安い場合、割引率を逆算
+            const calcRate = Math.round((estimatedOriginalPrice - storeData.salePrice) / estimatedOriginalPrice * 100);
+            if (!storeData.discountRate || calcRate > storeData.discountRate) {
+              storeData.discountRate = calcRate;
+            }
+            storeData.originalPrice = estimatedOriginalPrice;
+          } else {
+            // 定価と同じか高い場合
+            storeData.originalPrice = estimatedOriginalPrice > 0 ? estimatedOriginalPrice : storeData.salePrice;
+            if (!storeData.discountRate) {
+              storeData.discountRate = 0;
+            }
+          }
+        });
+      });
+
       // 巻数（数字）のリストを抽出してソート
       const vols = group.map(b => b.volumeNum).filter(v => v !== null).sort((a, b) => a - b);
-      
-      // 有料本と無料本の仕分け（ストア情報を正しく参照するヘルパーを使用）
       const freeVols = group.filter(b => isBookFree(b)).map(b => b.volumeNum).filter(v => v !== null).sort((a, b) => a - b);
       const saleVols = group.filter(b => isBookSale(b)).map(b => b.volumeNum).filter(v => v !== null).sort((a, b) => a - b);
+      
+      if (group[0].title.includes('アオハライド')) {
+        console.log(`[デバッグ・アオハライド] vols: ${JSON.stringify(vols)}, freeVols: ${JSON.stringify(freeVols)}, saleVols: ${JSON.stringify(saleVols)}, groupLength: ${group.length}`);
+      }
       
       if (vols.length > 0) {
         // 無料本があり、それが1巻のみである場合
