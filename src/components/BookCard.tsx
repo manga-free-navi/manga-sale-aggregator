@@ -31,8 +31,6 @@ interface BookCardProps {
   books: Book[]; // シリーズに属する本の配列
   animeVideos?: any[]; // アニメ配信情報リスト
   gameSales?: any[]; // 関連ゲームセールデータ
-  rakutenSpu?: number; // 楽天SPU倍率
-  seimorCoupon?: number; // シーモア割引率
 }
 
 /**
@@ -63,7 +61,7 @@ function getVolumeLabel(title: string, index: number): string {
 /**
  * シリーズごとにまとめた漫画カードコンポーネント（複数ストア価格比較・既読しおり機能付き）
  */
-export default function BookCard({ books, animeVideos = [], gameSales = [], rakutenSpu = 10, seimorCoupon = 0 }: BookCardProps) {
+export default function BookCard({ books, animeVideos = [], gameSales = [] }: BookCardProps) {
   const [mounted, setMounted] = useState(false);
   
   // 現在選択されている巻（初期状態は最初の巻）
@@ -278,8 +276,6 @@ export default function BookCard({ books, animeVideos = [], gameSales = [], raku
         return { name: 'シーモア', btnClass: 'btn-seimor', action: '読む' };
       case 'amazon':
         return { name: 'Kindle', btnClass: 'btn-kindle', action: '読む' };
-      case 'prtimes':
-        return { name: '公式サイト(PR TIMES)', btnClass: 'btn-prtimes', action: '詳細を見る' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }
@@ -635,29 +631,11 @@ export default function BookCard({ books, animeVideos = [], gameSales = [], raku
         <div className="store-compare-container" style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontWeight: 700 }}>
             <span>各電子ストアで読む・比較:</span>
-            <span style={{ color: '#34d399' }}>※実質価格シミュレータ反映中</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             {Object.entries(currentBook.stores).map(([storeKey, deal]) => {
               if (!deal) return null;
               const info = getStoreInfo(storeKey);
-              
-              // 実質価格シミュレーションの計算
-              let realPrice = deal.salePrice;
-              let discountDetail = '';
-              if (deal.salePrice > 0) {
-                if (storeKey === 'rakuten') {
-                  // 楽天SPU (ポイント還元)
-                  const returnPoints = Math.round(deal.salePrice * (rakutenSpu / 100));
-                  realPrice = Math.max(0, deal.salePrice - returnPoints);
-                  discountDetail = ` (${rakutenSpu}%還元 -¥${returnPoints})`;
-                } else if (storeKey === 'seimor' && seimorCoupon > 0) {
-                  // シーモア割引クーポン
-                  const couponDiscount = Math.round(deal.salePrice * (seimorCoupon / 100));
-                  realPrice = Math.max(0, deal.salePrice - couponDiscount);
-                  discountDetail = ` (クーポン${seimorCoupon}%引 -¥${couponDiscount})`;
-                }
-              }
 
               return (
                 <a key={storeKey} href={deal.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
@@ -676,15 +654,9 @@ export default function BookCard({ books, animeVideos = [], gameSales = [], raku
                   >
                     <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', lineHeight: '1.2' }}>
                       <span>{info.name} で{info.action}</span>
-                      {discountDetail && (
-                        <span style={{ fontSize: '0.6rem', fontWeight: 400, color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>{discountDetail}</span>
-                      )}
                     </span>
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, textAlign: 'right', display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
                       <span>{deal.salePrice === 0 ? '無料' : `¥${deal.salePrice.toLocaleString()}`} ↗</span>
-                      {realPrice !== deal.salePrice && deal.salePrice > 0 && (
-                        <span style={{ fontSize: '0.65rem', color: '#39ff14', fontWeight: 800, marginTop: '2px' }}>実質 ¥{realPrice.toLocaleString()}</span>
-                      )}
                     </span>
                   </button>
                 </a>

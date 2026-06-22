@@ -5,7 +5,6 @@ require('dotenv').config();
 // パーサーのインポート
 const { parseRakuten } = require('./parsers/rakuten');
 const { parseSeimor } = require('./parsers/seimor');
-const { parsePrtimes } = require('./parsers/prtimes');
 
 /**
  * すべてのストアからセール・無料情報を収集して保存するエントリーポイント
@@ -112,40 +111,6 @@ async function run() {
     console.log(`[シーモア] キャッシュから ${seimorCache.length} 件を復元しました。`);
     allBooks = allBooks.concat(seimorCache);
   }
-
-  // 2.3 PR TIMES
-  try {
-    const prtimesBooks = await parsePrtimes();
-    if (prtimesBooks && prtimesBooks.length > 0) {
-      console.log(`[PR TIMES] ${prtimesBooks.length} 件のデータを新規取得しました。`);
-      allBooks = allBooks.concat(prtimesBooks);
-    } else {
-      throw new Error('取得件数が0件です');
-    }
-  } catch (prtimesError) {
-    console.error('[PR TIMES] 取得に失敗したため、キャッシュデータから復元します:', prtimesError.message);
-    const prtimesCache = cachedBooks.filter(b => Object.keys(b.stores).includes('prtimes')).map(b => {
-      return {
-        id: b.id,
-        title: b.title,
-        author: b.author,
-        publisher: b.publisher,
-        imageUrl: b.imageUrl,
-        genre: b.genre,
-        description: b.description,
-        endDate: b.endDate,
-        updatedAt: b.updatedAt,
-        store: 'prtimes',
-        url: b.stores.prtimes.url,
-        originalPrice: b.stores.prtimes.originalPrice,
-        salePrice: b.stores.prtimes.salePrice,
-        discountRate: b.stores.prtimes.discountRate
-      };
-    });
-    console.log(`[PR TIMES] キャッシュから ${prtimesCache.length} 件を復元しました。`);
-    allBooks = allBooks.concat(prtimesCache);
-  }
-
   try {
     // 3. 同一作品（同一巻）のストア間名寄せマージ処理
     const mergedMap = new Map();

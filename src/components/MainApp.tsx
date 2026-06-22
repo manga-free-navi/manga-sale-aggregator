@@ -100,8 +100,6 @@ export default function MainApp() {
   // 3Way・テーマ・表示モード用ステート
   const [theme, setTheme] = useState('dark');
   const [viewMode, setViewMode] = useState<'grid' | 'gallery'>('grid');
-  const [rakutenSpu, setRakutenSpu] = useState(10);
-  const [seimorCoupon, setSeimorCoupon] = useState(0);
   const [animeVideos, setAnimeVideos] = useState<any[]>([]);
   const [gameSales, setGameSales] = useState<any[]>([]);
 
@@ -230,8 +228,6 @@ export default function MainApp() {
       const savedHideRead = localStorage.getItem('manga_hide_read');
       const savedTheme = localStorage.getItem('manga-theme') || 'dark';
       const savedViewMode = localStorage.getItem('manga-view-mode') || 'grid';
-      const savedSpu = localStorage.getItem('manga-spu');
-      const savedCoupon = localStorage.getItem('manga-coupon');
       
       if (savedGenre) setSelectedGenre(savedGenre);
       if (savedSort) setSortBy(savedSort);
@@ -241,8 +237,6 @@ export default function MainApp() {
       document.documentElement.setAttribute('data-theme', savedTheme);
       
       setViewMode(savedViewMode as 'grid' | 'gallery');
-      if (savedSpu) setRakutenSpu(parseInt(savedSpu));
-      if (savedCoupon) setSeimorCoupon(parseInt(savedCoupon));
     } catch (e) {
       console.error('Failed to load manga preferences:', e);
     }
@@ -280,16 +274,6 @@ export default function MainApp() {
   const handleSetViewMode = (mode: 'grid' | 'gallery') => {
     setViewMode(mode);
     localStorage.setItem('manga-view-mode', mode);
-  };
-
-  const handleSpuChange = (val: number) => {
-    setRakutenSpu(val);
-    localStorage.setItem('manga-spu', String(val));
-  };
-
-  const handleCouponChange = (val: number) => {
-    setSeimorCoupon(val);
-    localStorage.setItem('manga-coupon', String(val));
   };
 
   // 既読状態の同期（LocalStorageの監視）
@@ -557,189 +541,105 @@ export default function MainApp() {
         </label>
       </div>
 
-      {/* メインレイアウト */}
-      <div className="main-layout">
-        {/* 左側：漫画一覧領域 */}
-        <div style={{ flex: 1 }}>
-          {filteredAndSortedGroups.length === 0 ? (
-            <div className="empty-state">
-              <h3>対象の漫画が見つかりませんでした</h3>
-              <p>検索キーワードやフィルタ条件を変えてお試しください。</p>
-            </div>
-          ) : (
-            <div className={viewMode === 'gallery' ? "book-gallery-grid" : "book-grid"}>
-              {filteredAndSortedGroups.map((group, index) => {
-                // 3番目のカードの後にインライン広告を挟み込む（AdSense収益化用）
-                const insertAd = index === 2;
-                return (
-                  <div key={group.id} style={{ display: 'contents' }}>
-                    <LazyRender>
-                      {viewMode === 'gallery' ? (
-                        <div 
-                          className="gallery-card" 
-                          style={{
-                            position: 'relative',
-                            aspectRatio: '2/3',
-                            borderRadius: '12px',
-                            overflow: 'hidden',
-                            border: '1px solid var(--border-color)',
-                            background: 'var(--bg-card)',
-                            boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onClick={() => {
-                            // クリック時は代表電子ストアに遷移
-                            const repBook = group.books[0];
-                            const firstStoreKey = Object.keys(repBook.stores)[0];
-                            const storeUrl = repBook.stores[firstStoreKey]?.url || '';
-                            if (storeUrl) window.open(storeUrl, '_blank', 'noopener,noreferrer');
-                          }}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={group.books[0].imageUrl} 
-                            alt={group.books[0].title}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                            loading="lazy"
-                          />
-                          <div 
-                            className="gallery-overlay" 
-                            style={{
-                              position: 'absolute',
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              background: 'linear-gradient(to top, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.4) 80%, transparent 100%)',
-                              padding: '1.25rem 0.75rem 0.75rem 0.75rem',
-                              color: '#fff',
-                              opacity: 0,
-                              transition: 'opacity 0.3s ease',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'flex-end',
-                              height: '100%',
-                              boxSizing: 'border-box'
-                            }}
-                          >
-                            <div style={{ display: 'flex', gap: '4px', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '0.6rem', background: '#e11d48', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
-                                {Math.max(...group.books.map(b => getBookMaxDiscount(b)))}% OFF
-                              </span>
-                              {group.books.length > 1 && (
-                                <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                                  他 {group.books.length - 1}冊
-                                </span>
-                              )}
-                            </div>
-                            <h4 style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 0.2rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                              {group.books[0].title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '')}
-                            </h4>
-                            <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0 0 0.5rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                              {group.books[0].author}
-                            </p>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#39ff14' }}>
-                              ¥{Math.min(...group.books.map(b => getBookMinPrice(b))).toLocaleString()}〜
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <BookCard 
-                          books={group.books} 
-                          animeVideos={animeVideos} 
-                          gameSales={gameSales}
-                          rakutenSpu={rakutenSpu}
-                          seimorCoupon={seimorCoupon}
-                        />
-                      )}
-                    </LazyRender>
-                    {insertAd && (
-                      <AdContainer slot="inline-ad-slot-1" type="inline" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      {/* 漫画一覧領域 */}
+      {filteredAndSortedGroups.length === 0 ? (
+        <div className="empty-state">
+          <h3>対象の漫画が見つかりませんでした</h3>
+          <p>検索キーワードやフィルタ条件を変えてお試しください。</p>
         </div>
-
-        {/* 右側：サイドバー領域 */}
-        <aside>
-          <AdContainer slot="sidebar-ad-slot-1" type="sidebar" />
-          
-          {/* 実質価格シミュレータ */}
-          <div className="filter-container" style={{ marginTop: '20px', fontSize: '0.85rem' }}>
-            <h4 style={{ marginBottom: '10px', color: 'var(--accent-cyan, #06b6d4)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              実質価格シミュレータ
-            </h4>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.75rem', lineHeight: '1.4' }}>
-              ポイント還元や割引クーポンを適用した後の「実質おトク価格」を自動計算します。
-            </p>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
-                楽天SPU倍率: <strong>{rakutenSpu}%還元</strong>
-              </label>
-              <input 
-                type="range" 
-                min="0" 
-                max="16" 
-                value={rakutenSpu} 
-                onChange={(e) => handleSpuChange(parseInt(e.target.value))}
-                style={{ width: '100%', cursor: 'pointer' }}
-              />
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>※通常還元＋各種SPU倍率を入力</span>
-            </div>
-
-            <div style={{ marginBottom: '0.5rem' }}>
-              <label style={{ display: 'block', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
-                シーモア割引クーポン: <strong>{seimorCoupon}% OFF</strong>
-              </label>
-              <select 
-                value={seimorCoupon}
-                onChange={(e) => handleCouponChange(parseInt(e.target.value))}
-                style={{
-                  width: '100%',
-                  padding: '0.4rem',
-                  background: 'rgba(10, 15, 26, 0.8)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  color: 'var(--text-main)',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="0">適用なし (0%)</option>
-                <option value="10">10% OFF クーポン</option>
-                <option value="20">20% OFF クーポン</option>
-                <option value="30">30% OFF クーポン</option>
-                <option value="50">50% OFF クーポン</option>
-                <option value="70">70% OFF クーポン</option>
-              </select>
-            </div>
-          </div>
-          
-          {/* お役立ち情報等のエリア */}
-          <div
-            className="filter-container"
-            style={{ marginTop: '20px', fontSize: '0.85rem' }}
-          >
-            <h4 style={{ marginBottom: '10px', color: 'var(--accent-cyan)' }}>
-              ご利用ガイド
-            </h4>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              当サイトでは、主要ストア・無料漫画アプリで期間限定配信されている「無料漫画」や「セール割引本」をリストアップしています。
-            </p>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              <strong>無料マークの作品：</strong><br />
-              ストアやアプリ側で期間限定で無料設定になっているものです。期間終了後は通常設定に戻りますのでご注意ください。
-            </p>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              ※各セールの正確な価格や配信状況は、各ストア・アプリの遷移先ページにて最終確認をお願いいたします。
-            </p>
-          </div>
-        </aside>
-      </div>
+      ) : (
+        <div className={viewMode === 'gallery' ? "book-gallery-grid" : "book-grid"}>
+          {filteredAndSortedGroups.map((group, index) => {
+            // 3番目のカードの後にインライン広告を挟み込む（AdSense収益化用）
+            const insertAd = index === 2;
+            return (
+              <div key={group.id} style={{ display: 'contents' }}>
+                <LazyRender>
+                  {viewMode === 'gallery' ? (
+                    <div 
+                      className="gallery-card" 
+                      style={{
+                        position: 'relative',
+                        aspectRatio: '2/3',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onClick={() => {
+                        // クリック時は代表電子ストアに遷移
+                        const repBook = group.books[0];
+                        const firstStoreKey = Object.keys(repBook.stores)[0];
+                        const storeUrl = repBook.stores[firstStoreKey]?.url || '';
+                        if (storeUrl) window.open(storeUrl, '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={group.books[0].imageUrl} 
+                        alt={group.books[0].title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        loading="lazy"
+                      />
+                      <div 
+                        className="gallery-overlay" 
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background: 'linear-gradient(to top, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.4) 80%, transparent 100%)',
+                          padding: '1.25rem 0.75rem 0.75rem 0.75rem',
+                          color: '#fff',
+                          opacity: 0,
+                          transition: 'opacity 0.3s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'flex-end',
+                          height: '100%',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: '4px', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.6rem', background: '#e11d48', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                            {Math.max(...group.books.map(b => getBookMaxDiscount(b)))}% OFF
+                          </span>
+                          {group.books.length > 1 && (
+                            <span style={{ fontSize: '0.6rem', background: 'rgba(255,255,255,0.15)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                              他 {group.books.length - 1}冊
+                            </span>
+                          )}
+                        </div>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: 800, margin: '0 0 0.2rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {group.books[0].title.replace(/^\[[^\]]+\]/, '').replace(/^【[^】]+】/, '')}
+                        </h4>
+                        <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0 0 0.5rem 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {group.books[0].author}
+                        </p>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#39ff14' }}>
+                          ¥{Math.min(...group.books.map(b => getBookMinPrice(b))).toLocaleString()}〜
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <BookCard 
+                      books={group.books} 
+                      animeVideos={animeVideos} 
+                      gameSales={gameSales}
+                    />
+                  )}
+                </LazyRender>
+                {insertAd && (
+                  <AdContainer slot="inline-ad-slot-1" type="inline" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 同期モーダル */}
       {showSyncModal && (
