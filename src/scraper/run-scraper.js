@@ -5,6 +5,7 @@ require('dotenv').config();
 // パーサーのインポート
 const { parseRakuten } = require('./parsers/rakuten');
 const { parseSeimor } = require('./parsers/seimor');
+const { parsePrtimes } = require('./parsers/prtimes');
 
 /**
  * すべてのストアからセール・無料情報を収集して保存するエントリーポイント
@@ -111,6 +112,40 @@ async function run() {
     console.log(`[シーモア] キャッシュから ${seimorCache.length} 件を復元しました。`);
     allBooks = allBooks.concat(seimorCache);
   }
+
+  // 2.3 PR TIMES から無料公開情報を収集
+  try {
+    const prtimesBooks = await parsePrtimes();
+    if (prtimesBooks && prtimesBooks.length > 0) {
+      console.log(`[PR TIMES] ${prtimesBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(prtimesBooks);
+    } else {
+      throw new Error('取得件数が0件です');
+    }
+  } catch (prtimesError) {
+    console.error('[PR TIMES] 取得に失敗したため、キャッシュデータから復元します:', prtimesError.message);
+    const prtimesCache = cachedBooks.filter(b => Object.keys(b.stores).includes('prtimes')).map(b => {
+      return {
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        publisher: b.publisher,
+        imageUrl: b.imageUrl,
+        genre: b.genre,
+        description: b.description,
+        endDate: b.endDate,
+        updatedAt: b.updatedAt,
+        store: 'prtimes',
+        url: b.stores.prtimes.url,
+        originalPrice: b.stores.prtimes.originalPrice,
+        salePrice: b.stores.prtimes.salePrice,
+        discountRate: b.stores.prtimes.discountRate
+      };
+    });
+    console.log(`[PR TIMES] キャッシュから ${prtimesCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(prtimesCache);
+  }
+
   try {
     // 各書籍の stores から各種情報を抽出するヘルパー
     function isBookFree(book) {
@@ -389,14 +424,22 @@ async function run() {
           }
         }
       } else {
-        // 巻数が一切判定できなかったシリーズは、小説や単発本の可能性が高いため丸ごと除外
-        console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
-        return;
+        // PR TIMESのキャンペーン情報は巻数を持たないため、除外を回避する
+        const isPrtimesCampaign = group.some(b => Object.keys(b.stores).includes('prtimes'));
+        if (isPrtimesCampaign) {
+          console.log(`[PR TIMESキャンペーン維持] ${group[0].title}`);
+        } else {
+          // 巻数が一切判定できなかったシリーズは、小説や単発本の可能性が高いため丸ごと除外
+          console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
+          return;
+        }
       }
       
       // シリーズ状態を示すテキストの自動生成 (volsFreeText)
       let volsFreeText = "";
-      if (freeVols.length > 0 && saleVols.length === 0) {
+      if (group.some(b => Object.keys(b.stores).includes('prtimes'))) {
+        volsFreeText = "無料キャンペーン";
+      } else if (freeVols.length > 0 && saleVols.length === 0) {
         // すべて無料の場合
         const minVol = freeVols[0];
         const maxVol = freeVols[freeVols.length - 1];
