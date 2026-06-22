@@ -22,12 +22,12 @@ function getSeriesKey(title: string): string {
   // 全角数字を半角に正規化
   let key = title.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
   
-  // 1. 【期間限定無料】や【セール】などの前置タグや括弧内ノイズ（無料版・見本版等）を除去
+  // 1. 【期間限定無料】や【セール】などの前置タグや括弧内ノイズ（無料版・見本版・割引率表記等）を除去
   key = key.replace(/【[^】]*】/g, ' ')
            .replace(/\[[^\]]*\]/g, ' ')
-           .replace(/[\(（][^）\)]*(?:無料|見本|お試し|分冊|単行本)[^）\)]*[\)）]/g, ' ');
+           .replace(/[\(（][^）\)]*(?:無料|見本|お試し|分冊|単行本|％|%|OFF|割引|引き)[^）\)]*[\)）]/gi, ' ');
 
-  // 2. act.X, vol.X, no.X, #X などの巻数表記 of 除去
+  // 2. act.X, vol.X, no.X, #X などの巻数表記の除去
   key = key.replace(/(?:act|vol|volume|no|#)\.?\s*\d+/i, ' ');
 
   // 3. 巻数、または「X巻」「上・中・下」「前後」などを除去
