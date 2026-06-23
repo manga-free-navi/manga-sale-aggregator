@@ -6,6 +6,7 @@ require('dotenv').config();
 const { parseRakuten } = require('./parsers/rakuten');
 const { parseSeimor } = require('./parsers/seimor');
 const { parseBookwalker } = require('./parsers/bookwalker');
+const { parseKindle } = require('./parsers/kindle');
 
 /**
  * すべてのストアからセール・無料情報を収集して保存するエントリーポイント
@@ -146,6 +147,39 @@ async function run() {
     allBooks = allBooks.concat(bookwalkerCache);
   }
 
+  // 2.4 Kindle (Amazon)
+  try {
+    const kindleBooks = await parseKindle();
+    if (kindleBooks && kindleBooks.length > 0) {
+      console.log(`[Kindle] ${kindleBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(kindleBooks);
+    } else {
+      throw new Error('取得件数が0件です');
+    }
+  } catch (kindleError) {
+    console.error('[Kindle] 取得に失敗したため、キャッシュデータから復元します:', kindleError.message);
+    const kindleCache = cachedBooks.filter(b => Object.keys(b.stores).includes('amazon') && b.id.startsWith('kindle-')).map(b => {
+      return {
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        publisher: b.publisher,
+        imageUrl: b.imageUrl,
+        genre: b.genre,
+        description: b.description,
+        endDate: b.endDate,
+        updatedAt: b.updatedAt,
+        store: 'amazon',
+        url: b.stores.amazon.url,
+        originalPrice: b.stores.amazon.originalPrice,
+        salePrice: b.stores.amazon.salePrice,
+        discountRate: b.stores.amazon.discountRate
+      };
+    });
+    console.log(`[Kindle] キャッシュから ${kindleCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(kindleCache);
+  }
+
   try {
     // 各書籍の stores から各種情報を抽出するヘルパー
     function isBookFree(book) {
@@ -263,18 +297,22 @@ async function run() {
         return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
       });
       
+      // かっこ内が純粋な数字のみの場合 (例: "(1)", "（2）") は、それを巻数として優先抽出
+      let match = t.match(/[\(（]\s*(\d+)\s*[\)）]/);
+      if (match) return parseInt(match[1], 10);
+      
       // かっこ内の割引率表記 (50% OFF など) やお試し・見本などのノイズを事前に消去
       t = t.replace(/[\(（]\s*\d+\s*[％%]\s*OFF\s*[\)）]/i, ' ');
       t = t.replace(/[\(（]\s*\d+\s*[％%]\s*割引\s*[\)）]/i, ' ');
       t = t.replace(/[\(（]\s*\d+\s*[％%]\s*引き\s*[\)）]/i, ' ');
       t = t.replace(/【[^】]*】/g, ' ').replace(/\[[^\]]*\]/g, ' ');
       
-      // 第X巻、X巻、X話、X作目
-      let match = t.match(/第?\s*(\d+)\s*[巻話作]/);
-      if (match) return parseInt(match[1], 10);
+      // その他の数字以外の文字を含むかっこ書き (例: "(ラウル コミックス)", "（ハーパーコリンズ・ジャパン×アルト出版）") を事前に消去
+      t = t.replace(/\([^\)]*\)/g, ' ');
+      t = t.replace(/（[^）]*）/g, ' ');
       
-      // かっこ内の数字 (X) や （X）
-      match = t.match(/[\(（](\d+)[\)）]/);
+      // 第X巻、X巻、X話、X作目
+      match = t.match(/第?\s*(\d+)\s*[巻話作]/);
       if (match) return parseInt(match[1], 10);
       
       // act.X や vol.X などの表記
