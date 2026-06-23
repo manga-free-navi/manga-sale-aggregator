@@ -279,10 +279,15 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'Kindle', btnClass: 'btn-kindle', action: '読む' };
       case 'bookwalker':
         return { name: 'BOOK☆WALKER', btnClass: 'btn-bookwalker', action: '読む' };
+      case 'jumpplus':
+        return { name: 'ジャンプ＋', btnClass: 'btn-jumpplus', action: '読む' };
+      case 'sundaywebry':
+        return { name: 'サンデーうぇぶり', btnClass: 'btn-sundaywebry', action: '読む' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }
   };
+
 
 
   // 最も価格が安く割引率の高いストア情報（代表取引）を算出
