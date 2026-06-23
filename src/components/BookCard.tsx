@@ -281,6 +281,8 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'BOOK☆WALKER', btnClass: 'btn-bookwalker', action: '読む' };
       case 'jumpplus':
         return { name: 'ジャンプ＋', btnClass: 'btn-jumpplus', action: '読む' };
+      case 'jumpplus_campaign':
+        return { name: 'ジャンプ＋（キャンペーン）', btnClass: 'btn-jumpplus', action: '無料で読む' };
       case 'sundaywebry':
         return { name: 'サンデーうぇぶり', btnClass: 'btn-sundaywebry', action: '読む' };
       default:

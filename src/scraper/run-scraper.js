@@ -8,6 +8,7 @@ const { parseSeimor } = require('./parsers/seimor');
 const { parseBookwalker } = require('./parsers/bookwalker');
 const { parseKindle } = require('./parsers/kindle');
 const { parseGigaviewer } = require('./parsers/gigaviewer'); // ジャンプ+・サンデーうぇぶり RSS
+const { parseJumpplusCampaign } = require('./parsers/jumpplusCampaign'); // ジャンプ+ キャンペーン・復刻連載
 
 /**
  * すべてのストアからセール・無料情報を収集して保存するエントリーポイント
@@ -216,6 +217,37 @@ async function run() {
         allBooks = allBooks.concat(gigaCache);
       }
     }
+  }
+
+  // 2.6 ジャンプ＋ 無料キャンペーン・復刻連載
+  try {
+    const campaignBooks = await parseJumpplusCampaign();
+    if (campaignBooks && campaignBooks.length > 0) {
+      console.log(`[ジャンプ＋キャンペーン] ${campaignBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(campaignBooks);
+    } else {
+      throw new Error('取得件数が0件です');
+    }
+  } catch (campaignError) {
+    console.error('[ジャンプ＋キャンペーン] 取得に失敗したため、キャッシュデータから復元します:', campaignError.message);
+    const campaignCache = cachedBooks.filter(b => Object.keys(b.stores).includes('jumpplus_campaign')).map(b => ({
+      id: b.id,
+      title: b.title,
+      author: b.author,
+      publisher: b.publisher,
+      imageUrl: b.imageUrl,
+      genre: b.genre,
+      description: b.description,
+      endDate: b.endDate,
+      updatedAt: b.updatedAt,
+      store: 'jumpplus_campaign',
+      url: b.stores.jumpplus_campaign.url,
+      originalPrice: b.stores.jumpplus_campaign.originalPrice,
+      salePrice: b.stores.jumpplus_campaign.salePrice,
+      discountRate: b.stores.jumpplus_campaign.discountRate
+    }));
+    console.log(`[ジャンプ＋キャンペーン] キャッシュから ${campaignCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(campaignCache);
   }
 
   try {
@@ -521,10 +553,16 @@ async function run() {
         const isGigaviewerManga = group.some(b =>
           Object.keys(b.stores).some(k => k === 'jumpplus' || k === 'sundaywebry')
         );
+        // ジャンプ＋ 無料キャンペーン・復刻連載は巻数なしでも正当な作品として維持
+        const isJumpplusCampaign = group.some(b =>
+          Object.keys(b.stores).includes('jumpplus_campaign')
+        );
         if (isBookwalkerCampaign) {
           console.log(`[BOOK☆WALKERキャンペーン維持] ${group[0].title}`);
         } else if (isGigaviewerManga) {
           console.log(`[GigaViewer Web マンガ維持] ${group[0].title}`);
+        } else if (isJumpplusCampaign) {
+          console.log(`[ジャンプ＋キャンペーン維持] ${group[0].title}`);
         } else {
           // 巻数が一切判定できなかったシリーズは、小説や単発本の可能性が高いため丸ごと除外
           console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
@@ -534,7 +572,10 @@ async function run() {
       
       // シリーズ状態を示すテキストの自動生成 (volsFreeText)
       let volsFreeText = "";
-      if (group.some(b => Object.keys(b.stores).includes('bookwalker'))) {
+      if (group.some(b => Object.keys(b.stores).includes('jumpplus_campaign'))) {
+        // ジャンプ＋ キャンペーン・復刻連載は「無料キャンペーン」として表示
+        volsFreeText = "無料キャンペーン";
+      } else if (group.some(b => Object.keys(b.stores).includes('bookwalker'))) {
         volsFreeText = "無料キャンペーン";
       } else if (group.some(b => Object.keys(b.stores).some(k => k === 'jumpplus' || k === 'sundaywebry'))) {
         // GigaViewer 系サイトは話数連載なので「Web連載」として表示
