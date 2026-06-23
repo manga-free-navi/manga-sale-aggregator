@@ -9,6 +9,7 @@ const { parseBookwalker } = require('./parsers/bookwalker');
 const { parseKindle } = require('./parsers/kindle');
 const { parseGigaviewer } = require('./parsers/gigaviewer'); // ジャンプ+・サンデーうぇぶり RSS
 const { parseJumpplusCampaign } = require('./parsers/jumpplusCampaign'); // ジャンプ+ キャンペーン・復刻連載
+const { parseWebryfree } = require('./parsers/webryFree'); // サンデーうぇぶり 無料特集
 
 /**
  * すべてのストアからセール・無料情報を収集して保存するエントリーポイント
@@ -248,6 +249,37 @@ async function run() {
     }));
     console.log(`[ジャンプ＋キャンペーン] キャッシュから ${campaignCache.length} 件を復元しました。`);
     allBooks = allBooks.concat(campaignCache);
+  }
+
+  // 2.7 サンデーうぇぶり 無料特集（無料エピソードありシリーズ一覧）
+  try {
+    const webryFreeBooks = await parseWebryfree();
+    if (webryFreeBooks && webryFreeBooks.length > 0) {
+      console.log(`[サンデーうぇぶり無料] ${webryFreeBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(webryFreeBooks);
+    } else {
+      throw new Error('取得件数が0件です');
+    }
+  } catch (webryFreeError) {
+    console.error('[サンデーうぇぶり無料] 取得に失敗したため、キャッシュデータから復元します:', webryFreeError.message);
+    const webryFreeCache = cachedBooks.filter(b => Object.keys(b.stores).includes('sundaywebry_free')).map(b => ({
+      id: b.id,
+      title: b.title,
+      author: b.author,
+      publisher: b.publisher,
+      imageUrl: b.imageUrl,
+      genre: b.genre,
+      description: b.description,
+      endDate: b.endDate,
+      updatedAt: b.updatedAt,
+      store: 'sundaywebry_free',
+      url: b.stores.sundaywebry_free.url,
+      originalPrice: b.stores.sundaywebry_free.originalPrice,
+      salePrice: b.stores.sundaywebry_free.salePrice,
+      discountRate: b.stores.sundaywebry_free.discountRate
+    }));
+    console.log(`[サンデーうぇぶり無料] キャッシュから ${webryFreeCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(webryFreeCache);
   }
 
   try {
@@ -557,12 +589,18 @@ async function run() {
         const isJumpplusCampaign = group.some(b =>
           Object.keys(b.stores).includes('jumpplus_campaign')
         );
+        // サンデーうぇぶり 無料特集は巻数なしでも正当な作品として維持
+        const isWebryFree = group.some(b =>
+          Object.keys(b.stores).includes('sundaywebry_free')
+        );
         if (isBookwalkerCampaign) {
           console.log(`[BOOK☆WALKERキャンペーン維持] ${group[0].title}`);
         } else if (isGigaviewerManga) {
           console.log(`[GigaViewer Web マンガ維持] ${group[0].title}`);
         } else if (isJumpplusCampaign) {
           console.log(`[ジャンプ＋キャンペーン維持] ${group[0].title}`);
+        } else if (isWebryFree) {
+          console.log(`[サンデーうぇぶり無料維持] ${group[0].title}`);
         } else {
           // 巻数が一切判定できなかったシリーズは、小説や単発本の可能性が高いため丸ごと除外
           console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
@@ -575,6 +613,9 @@ async function run() {
       if (group.some(b => Object.keys(b.stores).includes('jumpplus_campaign'))) {
         // ジャンプ＋ キャンペーン・復刻連載は「無料キャンペーン」として表示
         volsFreeText = "無料キャンペーン";
+      } else if (group.some(b => Object.keys(b.stores).includes('sundaywebry_free'))) {
+        // サンデーうぇぶり無料特集は「無料エピソードあり」として表示
+        volsFreeText = "無料話公開中";
       } else if (group.some(b => Object.keys(b.stores).includes('bookwalker'))) {
         volsFreeText = "無料キャンペーン";
       } else if (group.some(b => Object.keys(b.stores).some(k => k === 'jumpplus' || k === 'sundaywebry'))) {

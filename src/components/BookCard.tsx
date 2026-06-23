@@ -285,6 +285,8 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'ジャンプ＋（キャンペーン）', btnClass: 'btn-jumpplus', action: '無料で読む' };
       case 'sundaywebry':
         return { name: 'サンデーうぇぶり', btnClass: 'btn-sundaywebry', action: '読む' };
+      case 'sundaywebry_free':
+        return { name: 'サンデーうぇぶり（無料）', btnClass: 'btn-sundaywebry', action: '無料で読む' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }
