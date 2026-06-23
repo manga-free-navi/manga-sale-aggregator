@@ -1,2 +1,2 @@
 :HL["/manga-sale-aggregator/_next/static/css/64544c6098befb7d.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"r9IOSFrTNRajzlKHQwTFc"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"yVfmy16_PwVZn43wgRCTe"}
