@@ -138,6 +138,8 @@ function parseRssXml(xmlText, storeKey, siteName) {
       description: info.episodeCount > 1
         ? `${info.episodeCount}話が無料公開中（${siteName}）`
         : `最新話が無料公開中（${siteName}）`,
+      // 独立したフィールドとして話数を保存（UIでの表示用）
+      freeEpisodeCount: info.episodeCount,
       endDate: null, // RSS には終了日の記載がないため null
       updatedAt: today,
       // run-scraper.js のマージ処理が期待するフラット形式

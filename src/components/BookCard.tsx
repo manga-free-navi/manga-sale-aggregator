@@ -20,6 +20,8 @@ export interface Book {
   description: string;
   updatedAt: string;
   volsFreeText?: string;
+  /** RSSから取得した無料公開エピソード数（ジャンプ+/うぇぶりRSS系のみ） */
+  freeEpisodeCount?: number;
   stores: {
     rakuten?: StoreDeal;
     seimor?: StoreDeal;
@@ -374,6 +376,26 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
             boxShadow: '0 0 8px rgba(168, 85, 247, 0.4)'
           }}>
             ⚡ {currentBook.volsFreeText}
+          </span>
+        )}
+
+        {/* 無料話数バッジ（GigaViewer RSS 系のみ表示） */}
+        {currentBook.freeEpisodeCount && currentBook.freeEpisodeCount > 0 && (
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+            color: '#fff',
+            fontSize: '0.62rem',
+            fontWeight: 800,
+            padding: '0.2rem 0.5rem',
+            borderRadius: '4px',
+            marginLeft: '0.5rem',
+            verticalAlign: 'middle',
+            boxShadow: '0 0 6px rgba(245, 158, 11, 0.45)',
+            letterSpacing: '0.01em',
+          }}>
+            📖 {currentBook.freeEpisodeCount}話 無料
           </span>
         )}
         

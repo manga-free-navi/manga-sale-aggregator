@@ -108,6 +108,8 @@ export default function MainApp() {
   const [sortBy, setSortBy] = useState('discountDesc');
   const [hideRead, setHideRead] = useState(false);
   const [readList, setReadList] = useState<string[]>([]);
+  // ストアタグ絞り込み（複数選択可）
+  const [selectedStores, setSelectedStores] = useState<string[]>([]);
 
   // 同期コード管理ステート
   const [showSyncModal, setShowSyncModal] = useState(false);
@@ -335,6 +337,13 @@ export default function MainApp() {
       result = result.filter((b) => !readList.includes(b.id));
     }
 
+    // 2.7 ストアタグ絞り込み（選択したストアを少なくとも1つ以上持つ本のみ表示）
+    if (selectedStores.length > 0) {
+      result = result.filter((b) =>
+        selectedStores.some(store => Object.keys(b.stores).includes(store))
+      );
+    }
+
     // 3. シリーズごとにグループ化
     const groupsMap = new Map<string, Book[]>();
     
@@ -435,7 +444,7 @@ export default function MainApp() {
     });
 
     return groupedResults;
-  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList]);
+  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores]);
 
   return (
     <div className="container" style={{ paddingTop: '20px' }}>
@@ -541,6 +550,66 @@ export default function MainApp() {
         setSortBy={handleSortChange}
         genres={genres}
       />
+
+      {/* ストアタグ絞り込み */}
+      {((): React.ReactNode => {
+        // タグ定義：名前、絵文字、対応ストアキー配列
+        const storeTags: { label: string; emoji: string; keys: string[] }[] = [
+          { label: 'ジャンプ+', emoji: '⚡', keys: ['jumpplus', 'jumpplus_campaign'] },
+          { label: 'うぇぶり', emoji: '☀️', keys: ['sundaywebry', 'sundaywebry_free'] },
+          { label: '楽天Kobo', emoji: '📚', keys: ['rakuten'] },
+          { label: 'シーモア', emoji: '🌊', keys: ['seimor'] },
+          { label: 'BOOKWALKER', emoji: '🎮', keys: ['bookwalker'] },
+          { label: 'Kindle', emoji: '📱', keys: ['amazon'] },
+        ];
+        const isTagActive = (keys: string[]) => keys.some(k => selectedStores.includes(k));
+        const toggleStore = (keys: string[]) => {
+          setSelectedStores(prev => {
+            const allIn = keys.every(k => prev.includes(k));
+            if (allIn) return prev.filter(k => !keys.includes(k));
+            const merged = [...prev];
+            keys.forEach(k => { if (!merged.includes(k)) merged.push(k); });
+            return merged;
+          });
+        };
+        return (
+          <div style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '0.25rem' }}>配信元：</span>
+            <button
+              id="store-tag-all"
+              onClick={() => setSelectedStores([])}
+              style={{
+                fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.7rem',
+                borderRadius: '20px', border: '1px solid', cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                background: selectedStores.length === 0 ? 'linear-gradient(135deg,#6366f1,#a855f7)' : 'rgba(255,255,255,0.04)',
+                borderColor: selectedStores.length === 0 ? 'transparent' : 'rgba(255,255,255,0.12)',
+                color: selectedStores.length === 0 ? '#fff' : 'var(--text-secondary)',
+                boxShadow: selectedStores.length === 0 ? '0 0 10px rgba(99,102,241,0.4)' : 'none',
+              }}
+            >すべて</button>
+            {storeTags.map(tag => {
+              const active = isTagActive(tag.keys);
+              return (
+                <button
+                  key={tag.label}
+                  id={`store-tag-${tag.label}`}
+                  onClick={() => toggleStore(tag.keys)}
+                  style={{
+                    fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.7rem',
+                    borderRadius: '20px', border: '1px solid', cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    background: active ? 'linear-gradient(135deg,#0ea5e9,#6366f1)' : 'rgba(255,255,255,0.04)',
+                    borderColor: active ? 'transparent' : 'rgba(255,255,255,0.12)',
+                    color: active ? '#fff' : 'var(--text-secondary)',
+                    boxShadow: active ? '0 0 10px rgba(14,165,233,0.35)' : 'none',
+                  }}
+                >{tag.emoji} {tag.label}</button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* 補助コントロール（件数 ＆ 既読非表示トグル） */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center', fontSize: '0.9rem' }}>

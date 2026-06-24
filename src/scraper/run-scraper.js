@@ -346,6 +346,8 @@ async function run() {
           description: book.description,
           endDate: book.endDate,
           updatedAt: book.updatedAt,
+          // 無料話数（GigaViewer RSS 系のみセットされる。他は undefined のまま）
+          freeEpisodeCount: book.freeEpisodeCount || undefined,
           stores: {}
         });
       }
@@ -358,6 +360,11 @@ async function run() {
         salePrice: book.salePrice,
         discountRate: book.discountRate
       };
+
+      // freeEpisodeCount を引き継ぐ（まだセットされていない場合のみ）
+      if (!mergedBook.freeEpisodeCount && book.freeEpisodeCount) {
+        mergedBook.freeEpisodeCount = book.freeEpisodeCount;
+      }
 
       // Kindle（Amazon）用アフィリエイト検索リンクを自動生成してストアに追加
       if (!mergedBook.stores['amazon']) {
