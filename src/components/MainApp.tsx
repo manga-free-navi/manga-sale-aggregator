@@ -110,6 +110,8 @@ export default function MainApp() {
   const [readList, setReadList] = useState<string[]>([]);
   // ストアタグ絞り込み（複数選択可）
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
+  // カテゴリ絞り込み
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // 同期コード管理ステート
   const [showSyncModal, setShowSyncModal] = useState(false);
@@ -344,6 +346,11 @@ export default function MainApp() {
       );
     }
 
+    // 2.8 カテゴリ絞り込み
+    if (selectedCategory !== 'all') {
+      result = result.filter((b) => (b as any).category === selectedCategory);
+    }
+
     // 3. シリーズごとにグループ化
     const groupsMap = new Map<string, Book[]>();
     
@@ -444,7 +451,7 @@ export default function MainApp() {
     });
 
     return groupedResults;
-  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores]);
+  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory]);
 
   return (
     <div className="container" style={{ paddingTop: '20px' }}>
@@ -550,6 +557,46 @@ export default function MainApp() {
         setSortBy={handleSortChange}
         genres={genres}
       />
+
+      {/* カテゴリタグ（無料連載 / 期間限定無料 / セール） */}
+      <div style={{ marginBottom: '0.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '0.25rem' }}>種別：</span>
+        {([
+          { value: 'all',               label: 'すべて',       emoji: '' },
+          { value: 'free_serialization', label: '無料連載',    emoji: '📺' },
+          { value: 'limited_free',       label: '期間限定無料', emoji: '⏰' },
+          { value: 'sale',               label: 'セール',       emoji: '💰' },
+        ] as const).map(cat => {
+          const active = selectedCategory === cat.value;
+          // カテゴリごとにアクティブ色を変える
+          const activeGradient =
+            cat.value === 'free_serialization' ? 'linear-gradient(135deg,#10b981,#059669)' :
+            cat.value === 'limited_free'       ? 'linear-gradient(135deg,#f59e0b,#d97706)' :
+            cat.value === 'sale'               ? 'linear-gradient(135deg,#ef4444,#dc2626)' :
+                                                 'linear-gradient(135deg,#6366f1,#a855f7)';
+          const activeShadow =
+            cat.value === 'free_serialization' ? '0 0 10px rgba(16,185,129,0.4)' :
+            cat.value === 'limited_free'       ? '0 0 10px rgba(245,158,11,0.4)' :
+            cat.value === 'sale'               ? '0 0 10px rgba(239,68,68,0.4)'  :
+                                                 '0 0 10px rgba(99,102,241,0.4)';
+          return (
+            <button
+              key={cat.value}
+              id={`category-tag-${cat.value}`}
+              onClick={() => setSelectedCategory(cat.value)}
+              style={{
+                fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.8rem',
+                borderRadius: '20px', border: '1px solid', cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                background: active ? activeGradient : 'rgba(255,255,255,0.04)',
+                borderColor: active ? 'transparent' : 'rgba(255,255,255,0.12)',
+                color: active ? '#fff' : 'var(--text-secondary)',
+                boxShadow: active ? activeShadow : 'none',
+              }}
+            >{cat.emoji ? `${cat.emoji} ` : ''}{cat.label}</button>
+          );
+        })}
+      </div>
 
       {/* ストアタグ絞り込み */}
       {((): React.ReactNode => {

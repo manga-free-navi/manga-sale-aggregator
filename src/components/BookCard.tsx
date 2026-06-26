@@ -22,6 +22,8 @@ export interface Book {
   volsFreeText?: string;
   /** RSSから取得した無料公開エピソード数（ジャンプ+/うぇぶりRSS系のみ） */
   freeEpisodeCount?: number;
+  /** コンテンツ種別: 'free_serialization'=無料連載 / 'limited_free'=期間限定無料 / 'sale'=セール */
+  category?: 'free_serialization' | 'limited_free' | 'sale';
   stores: {
     rakuten?: StoreDeal;
     seimor?: StoreDeal;
@@ -309,9 +311,22 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
 
   return (
     <article className="book-card" id={`manga-card-${currentBook.id}`} style={{ position: 'relative' }}>
-      {/* 割引率・無料バッジ */}
-      <div className="discount-tag">
-        {bestDeal.discountRate === 100 ? '無料公開' : `${bestDeal.discountRate}% OFF`}
+      {/* カテゴリバッジ（左上） & 割引率バッジ */}
+      <div className="discount-tag" style={{
+        background: currentBook.category === 'free_serialization'
+          ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+          : currentBook.category === 'limited_free'
+            ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+            : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+      }}>
+        {currentBook.category === 'free_serialization'
+          ? '📺 無料連載'
+          : currentBook.category === 'limited_free'
+            ? '⏰ 期間限定無料'
+            : bestDeal.discountRate === 100
+              ? '無料公開'
+              : `${bestDeal.discountRate}% OFF`
+        }
       </div>
 
       {/* 既読しおりボタン */}

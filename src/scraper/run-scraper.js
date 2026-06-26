@@ -655,6 +655,28 @@ async function run() {
         volsFreeText = `${freePart} ＆ 続巻セール`;
       }
       
+      // カテゴリ分類ロジック
+      // 優先度: 無料連載 > 期間限定無料 > セール
+      let category = 'sale'; // デフォルトはセール
+      const allStoreKeys = group.flatMap(b => Object.keys(b.stores));
+      const allDeals = group.flatMap(b => Object.values(b.stores).filter(Boolean));
+
+      // Web連載系マンガ（ジャンプ+・サンデーうぇぶりのRSS）は「無料連載」
+      if (allStoreKeys.some(k => k === 'jumpplus' || k === 'sundaywebry' || k === 'sundaywebry_free')) {
+        category = 'free_serialization';
+      }
+      // キャンペーン系（ジャンプ+キャンペーン・BOOKWALKER・期間限定100%OFF）は「期間限定無料」
+      else if (
+        allStoreKeys.some(k => k === 'jumpplus_campaign' || k === 'bookwalker') ||
+        (group.some(b => b.endDate) && allDeals.some(d => d && d.discountRate === 100))
+      ) {
+        category = 'limited_free';
+      }
+      // 上記以外で100%OFFの場合も「期間限定無料」
+      else if (allDeals.some(d => d && d.discountRate === 100)) {
+        category = 'limited_free';
+      }
+
       // シリーズ内の全巻を保存リストに追加（フロントの巻数選択UIと連動させるため）
       group.forEach(book => {
         // タイトルから不要な装飾を除去
@@ -672,8 +694,13 @@ async function run() {
           endDate: book.endDate,
           updatedAt: book.updatedAt,
           volsFreeText: volsFreeText,
+          // カテゴリ: 'free_serialization'（無料連載）/ 'limited_free'（期間限定無料）/ 'sale'（セール）
+          category: category,
+          // freeEpisodeCount を引き継ぎ（RSS系のみセットされている）
+          freeEpisodeCount: book.freeEpisodeCount || undefined,
           stores: { ...book.stores } // すべてのストア情報をマージされた状態で維持
         };
+
         
         // 重複チェックして保存
         const existing = nonSingleVolumeFreeBooks.find(b => b.id === mergedBook.id);
