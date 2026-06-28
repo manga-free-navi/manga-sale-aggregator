@@ -37,6 +37,7 @@ export interface Book {
   nextUpdateDate?: string;
   /** コンテンツ種別: 'free_serialization'=無料連載 / 'limited_free'=期間限定無料 / 'sale'=セール */
   category?: 'free_serialization' | 'limited_free' | 'sale';
+  isAllFree?: boolean; // 全話無料フラグ
   stores: {
     rakuten?: StoreDeal;
     seimor?: StoreDeal;
@@ -442,7 +443,9 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
           <span className="series-vols-badge" style={{
             display: 'inline-flex',
             alignItems: 'center',
-            background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
+            background: currentBook.isAllFree
+              ? 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)' // 全話無料ゴールドカラー
+              : 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
             color: '#ffffff',
             fontSize: '0.65rem',
             fontWeight: 700,
@@ -450,7 +453,9 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
             borderRadius: '4px',
             marginLeft: '0.5rem',
             verticalAlign: 'middle',
-            boxShadow: '0 0 8px rgba(168, 85, 247, 0.4)'
+            boxShadow: currentBook.isAllFree
+              ? '0 0 10px rgba(251, 191, 36, 0.6)'
+              : '0 0 8px rgba(168, 85, 247, 0.4)'
           }}>
             ⚡ {currentBook.volsFreeText}
           </span>

@@ -107,6 +107,7 @@ export default function MainApp() {
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('discountDesc');
   const [hideRead, setHideRead] = useState(false);
+  const [showOnlyAllFree, setShowOnlyAllFree] = useState(false); // 全話無料のみ表示フラグ
   const [readList, setReadList] = useState<string[]>([]);
   // ストアタグ絞り込み（複数選択可）
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
@@ -120,7 +121,7 @@ export default function MainApp() {
   // フィルター変更時にページを 1 に自動リセット (selectedStores 配列の参照変化による無限ループ防止)
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedGenre, sortBy, JSON.stringify(selectedStores), selectedCategory, hideRead]);
+  }, [searchTerm, selectedGenre, sortBy, JSON.stringify(selectedStores), selectedCategory, hideRead, showOnlyAllFree]);
 
   // ページ変更時に画面最上部へスムーズスクロール (初回マウント時はスクロール位置を維持)
   const isFirstRender = useRef(true);
@@ -268,12 +269,14 @@ export default function MainApp() {
       const savedGenre = localStorage.getItem('manga_filter_genre');
       const savedSort = localStorage.getItem('manga_sort_by');
       const savedHideRead = localStorage.getItem('manga_hide_read');
+      const savedShowOnlyAllFree = localStorage.getItem('manga_show_only_all_free');
       const savedTheme = localStorage.getItem('manga-theme') || 'dark';
       const savedViewMode = localStorage.getItem('manga-view-mode') || 'grid';
       
       if (savedGenre) setSelectedGenre(savedGenre);
       if (savedSort) setSortBy(savedSort);
       if (savedHideRead) setHideRead(savedHideRead === 'true');
+      if (savedShowOnlyAllFree) setShowOnlyAllFree(savedShowOnlyAllFree === 'true');
       
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
@@ -303,6 +306,13 @@ export default function MainApp() {
     setHideRead(hide);
     try {
       localStorage.setItem('manga_hide_read', String(hide));
+    } catch (e) { console.error(e); }
+  };
+
+  const handleShowOnlyAllFreeChange = (show: boolean) => {
+    setShowOnlyAllFree(show);
+    try {
+      localStorage.setItem('manga_show_only_all_free', String(show));
     } catch (e) { console.error(e); }
   };
 
@@ -369,6 +379,15 @@ export default function MainApp() {
     // 2.8 カテゴリ絞り込み
     if (selectedCategory !== 'all') {
       result = result.filter((b) => (b as any).category === selectedCategory);
+    }
+
+    // 2.9 全話無料のみ表示
+    if (showOnlyAllFree) {
+      result = result.filter(
+        (b) =>
+          (b as any).isAllFree === true ||
+          (b as any).category === 'free_serialization'
+      );
     }
 
     // 3. シリーズごとにグループ化
@@ -471,7 +490,7 @@ export default function MainApp() {
     });
 
     return groupedResults;
-  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory]);
+  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory, showOnlyAllFree]);
 
   // ページネーションの計算とデータ分割
   const totalPages = Math.ceil(filteredAndSortedGroups.length / itemsPerPage);
@@ -695,8 +714,8 @@ export default function MainApp() {
         );
       })()}
 
-      {/* 補助コントロール（件数 ＆ 既読非表示トグル） */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center', fontSize: '0.9rem' }}>
+      {/* 補助コントロール（件数 ＆ 各種トグル） */}
+      <div style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', fontSize: '0.9rem' }}>
         <div style={{ color: 'var(--text-secondary)' }}>
           該当シリーズ: <strong>{filteredAndSortedGroups.length}</strong> 作品
         </div>
@@ -709,6 +728,16 @@ export default function MainApp() {
             style={{ width: '16px', height: '16px', cursor: 'pointer' }}
           />
           既読にした作品を非表示にする
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-show-only-all-free">
+          <input
+            type="checkbox"
+            checked={showOnlyAllFree}
+            onChange={(e) => handleShowOnlyAllFreeChange(e.target.checked)}
+            id="checkbox-show-only-all-free"
+            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+          />
+          🏆 全話（全巻）無料のみ表示
         </label>
       </div>
 

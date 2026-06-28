@@ -847,6 +847,11 @@ async function run() {
         // タイトルから不要な装飾を除去
         const cleanedTitle = book.title.replace(/【期間限定無料】|【期間限定無料お試し版】|【期間限定無料冊子】|【セール】/g, '').trim();
         
+        // 全話・全巻無料キーワードの検出
+        const allFreeKeywords = ['全話無料', '全巻無料', '全話大解放', '全話開放', '全話大開放', '全巻開放', '全巻大開放', '完全無料', '全話イッキ', '全巻イッキ'];
+        const textToCheck = (volsFreeText + ' ' + (book.volsFreeText || '') + ' ' + (book.description || '')).toLowerCase();
+        const isAllFree = allFreeKeywords.some(keyword => textToCheck.includes(keyword));
+
         // 既存オブジェクトのクリーンアップと volsFreeText のセット
         const mergedBook = {
           id: book.id,
@@ -861,6 +866,7 @@ async function run() {
           volsFreeText: volsFreeText,
           // カテゴリ: 'free_serialization'（無料連載）/ 'limited_free'（期間限定無料）/ 'sale'（セール）
           category: category,
+          isAllFree: isAllFree, // 全話無料フラグを追加
           // freeEpisodeCount を引き継ぎ（RSS系のみセットされている）
           freeEpisodeCount: book.freeEpisodeCount || undefined,
           freeEpisodes: book.freeEpisodes || undefined,
@@ -875,6 +881,9 @@ async function run() {
         if (existing) {
           // すでに同一巻が存在する場合、店舗データをマージ
           existing.stores = { ...existing.stores, ...mergedBook.stores };
+          if (mergedBook.isAllFree) {
+            existing.isAllFree = true;
+          }
           if (!existing.imageUrl && mergedBook.imageUrl) {
             existing.imageUrl = mergedBook.imageUrl;
           }
