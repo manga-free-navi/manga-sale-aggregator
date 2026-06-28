@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 // 自動収集データと、手動キャンペーンデータを両方インポートして結合します
 import initialBooks from '../data/sales.json';
 import manualBooks from '../data/manual_sales.json';
@@ -112,6 +112,26 @@ export default function MainApp() {
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   // カテゴリ絞り込み
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // ページネーション用ステート
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 60;
+
+  // フィルター変更時にページを 1 に自動リセット (selectedStores 配列の参照変化による無限ループ防止)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedGenre, sortBy, JSON.stringify(selectedStores), selectedCategory, hideRead]);
+
+  // ページ変更時に画面最上部へスムーズスクロール (初回マウント時はスクロール位置を維持)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
 
   // 同期コード管理ステート
   const [showSyncModal, setShowSyncModal] = useState(false);
@@ -453,6 +473,16 @@ export default function MainApp() {
     return groupedResults;
   }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory]);
 
+  // ページネーションの計算とデータ分割
+  const totalPages = Math.ceil(filteredAndSortedGroups.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedGroups = useMemo(() => {
+    return filteredAndSortedGroups.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedGroups, startIndex]);
+
+
+
+
   return (
     <div className="container" style={{ paddingTop: '20px' }}>
       {/* ヒーローセクション */}
@@ -604,6 +634,13 @@ export default function MainApp() {
         const storeTags: { label: string; emoji: string; keys: string[] }[] = [
           { label: 'ジャンプ+', emoji: '⚡', keys: ['jumpplus', 'jumpplus_campaign'] },
           { label: 'うぇぶり', emoji: '☀️', keys: ['sundaywebry', 'sundaywebry_free'] },
+          { label: 'マガポケ', emoji: '📢', keys: ['magapoke', 'magapoke_campaign'] },
+          { label: 'コミックDAYS', emoji: '📆', keys: ['comicdays', 'comicdays_campaign'] },
+          { label: 'となジャン', emoji: '🎯', keys: ['tonarinoyj'] },
+          { label: 'ヤンマガWeb', emoji: '🔥', keys: ['yanmaga', 'yanmaga_campaign'] },
+          { label: 'くらげバンチ', emoji: '🪼', keys: ['kuragebunch'] },
+          { label: 'コミックガルド', emoji: '🛡️', keys: ['comicgardo'] },
+          { label: 'MAGCOMI', emoji: '🏰', keys: ['magcomi'] },
           { label: '楽天Kobo', emoji: '📚', keys: ['rakuten'] },
           { label: 'シーモア', emoji: '🌊', keys: ['seimor'] },
           { label: 'BOOKWALKER', emoji: '🎮', keys: ['bookwalker'] },
@@ -683,7 +720,7 @@ export default function MainApp() {
         </div>
       ) : (
         <div className={viewMode === 'gallery' ? "book-gallery-grid" : "book-grid"}>
-          {filteredAndSortedGroups.map((group, index) => {
+          {paginatedGroups.map((group, index) => {
             const cardElement = (
               <LazyRender key={group.id}>
                 {viewMode === 'gallery' ? (
@@ -781,6 +818,152 @@ export default function MainApp() {
           })}
         </div>
       )}
+
+      {/* ページネーションコントローラー */}
+      {totalPages > 1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '0.4rem',
+          marginTop: '2.5rem',
+          marginBottom: '2.5rem',
+          flexWrap: 'wrap'
+        }} id="pagination-controls">
+          {/* 最初へ */}
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)',
+              color: currentPage === 1 ? 'var(--text-secondary)' : 'var(--text-main)',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              opacity: currentPage === 1 ? 0.4 : 1,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              transition: 'all 0.2s'
+            }}
+          >
+            « 最初
+          </button>
+          
+          {/* 前へ */}
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)',
+              color: currentPage === 1 ? 'var(--text-secondary)' : 'var(--text-main)',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              opacity: currentPage === 1 ? 0.4 : 1,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              transition: 'all 0.2s'
+            }}
+          >
+            ‹ 前へ
+          </button>
+
+          {/* ページ番号（省略記号付き） */}
+          {((): React.ReactNode => {
+            const pages: (number | string)[] = [];
+            const delta = 2; // 現在ページの前後に表示する数
+            const left = currentPage - delta;
+            const right = currentPage + delta;
+            
+            for (let i = 1; i <= totalPages; i++) {
+              if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+                pages.push(i);
+              } else if (pages[pages.length - 1] !== '...') {
+                pages.push('...');
+              }
+            }
+
+            return pages.map((page, idx) => {
+              if (page === '...') {
+                return (
+                  <span 
+                    key={`ellipsis-${idx}`} 
+                    style={{ color: 'var(--text-secondary)', padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                  >
+                    ...
+                  </span>
+                );
+              }
+
+              const isCurrent = page === currentPage;
+              return (
+                <button
+                  key={`page-${page}`}
+                  onClick={() => setCurrentPage(page as number)}
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: isCurrent ? 'transparent' : 'rgba(255,255,255,0.08)',
+                    background: isCurrent ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
+                    color: isCurrent ? '#fff' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    boxShadow: isCurrent ? '0 0 10px rgba(99,102,241,0.35)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {page}
+                </button>
+              );
+            });
+          })()}
+
+          {/* 次へ */}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)',
+              color: currentPage === totalPages ? 'var(--text-secondary)' : 'var(--text-main)',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              opacity: currentPage === totalPages ? 0.4 : 1,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              transition: 'all 0.2s'
+            }}
+          >
+            次へ ›
+          </button>
+
+          {/* 最後へ */}
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)',
+              color: currentPage === totalPages ? 'var(--text-secondary)' : 'var(--text-main)',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              opacity: currentPage === totalPages ? 0.4 : 1,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              transition: 'all 0.2s'
+            }}
+          >
+            最後 »
+          </button>
+        </div>
+      )}
+
 
       {/* 同期モーダル */}
       {showSyncModal && (

@@ -22,6 +22,31 @@ const GIGAVIEWER_SITES = [
     siteName: 'サンデーうぇぶり（小学館）',
     rssUrl: 'https://www.sunday-webry.com/rss',
   },
+  {
+    storeKey: 'comicdays',
+    siteName: 'コミックDAYS（講談社）',
+    rssUrl: 'https://comic-days.com/rss',
+  },
+  {
+    storeKey: 'tonarinoyj',
+    siteName: 'となりのヤングジャンプ（集英社）',
+    rssUrl: 'https://tonarinoyj.jp/rss',
+  },
+  {
+    storeKey: 'kuragebunch',
+    siteName: 'くらげバンチ（新潮社）',
+    rssUrl: 'https://kuragebunch.com/rss',
+  },
+  {
+    storeKey: 'comicgardo',
+    siteName: 'コミックガルド（オーバーラップ）',
+    rssUrl: 'https://comic-gardo.com/rss',
+  },
+  {
+    storeKey: 'magcomi',
+    siteName: 'MAGCOMI（マッグガーデン）',
+    rssUrl: 'https://magcomi.com/rss',
+  },
 ];
 
 /**
@@ -87,9 +112,36 @@ function parseRssXml(xmlText, storeKey, siteName) {
       .replace(/&#39;/g, "'");
   }
 
+  // 日付フォーマット用のヘルパー関数 (JST標準時に補正)
+  function formatPubDate(pubDateStr) {
+    try {
+      const d = new Date(pubDateStr);
+      if (isNaN(d.getTime())) return null;
+      // JST (UTC+9) への補正
+      const jstDate = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+      return jstDate.toISOString().slice(0, 10);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 次回更新日の計算 (最新公開日の7日後を週刊連載の基準とする)
+  function calculateNextUpdateDate(latestPubDateStr) {
+    if (!latestPubDateStr) return null;
+    try {
+      const d = new Date(latestPubDateStr);
+      if (isNaN(d.getTime())) return null;
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().slice(0, 10);
+    } catch (e) {
+      return null;
+    }
+  }
+
   // シリーズ名をキーにしてエピソードをグループ化
-  // key: シリーズ名, value: { episodes: [], author, imageUrl }
+  // key: シリーズ名, value: { episodes: [], author, imageUrl, ... }
   const seriesMap = new Map();
+  const today = new Date().toISOString().slice(0, 10);
 
   for (const itemXml of itemMatches) {
     const episodeTitle = decodeHtml(stripCdata(extractTag(itemXml, 'title')));
@@ -112,20 +164,35 @@ function parseRssXml(xmlText, storeKey, siteName) {
         imageUrl: imageUrl,
         pubDate: pubDate,
         freeTermStart: freeTermStart,
-        episodeCount: 0,
+        episodes: [],
       });
     }
-    // エピソード数をカウント（同シリーズで複数話配信中の場合に反映）
-    seriesMap.get(seriesName).episodeCount += 1;
+    
+    const info = seriesMap.get(seriesName);
+    // タイトルの [第X話] や [X話] などの話数表記部分を抽出
+    const match = episodeTitle.match(/^\[([^\]]+)\]/);
+    const epName = match ? match[1] : '最新話';
+    
+    // エピソード情報をリストに追加
+    info.episodes.push({
+      title: epName,
+      fullTitle: episodeTitle,
+      url: link,
+      pubDate: formatPubDate(pubDate) || today,
+    });
   }
 
   // シリーズマップを書籍オブジェクト配列に変換
   const books = [];
-  const today = new Date().toISOString().slice(0, 10);
 
   for (const [seriesName, info] of seriesMap.entries()) {
     // ストアキーとシリーズ名を組み合わせた一意 ID
     const safeId = `${storeKey}_${seriesName.replace(/[^a-zA-Z0-9\u3040-\u9FFF]/g, '_')}`;
+
+    // RSSの並び順（通常最新が先頭）に基づいて、最新エピソードの日付を取得
+    const latestEp = info.episodes[0];
+    const latestPubDate = latestEp ? latestEp.pubDate : today;
+    const nextUpdateDate = calculateNextUpdateDate(latestPubDate);
 
     books.push({
       id: safeId,
@@ -135,11 +202,14 @@ function parseRssXml(xmlText, storeKey, siteName) {
       imageUrl: info.imageUrl,
       genre: '漫画',
       // 無料公開エピソードが何話か分かるように description に記載
-      description: info.episodeCount > 1
-        ? `${info.episodeCount}話が無料公開中（${siteName}）`
+      description: info.episodes.length > 1
+        ? `${info.episodes.length}話が無料公開中（${siteName}）`
         : `最新話が無料公開中（${siteName}）`,
       // 独立したフィールドとして話数を保存（UIでの表示用）
-      freeEpisodeCount: info.episodeCount,
+      freeEpisodeCount: info.episodes.length,
+      freeEpisodes: info.episodes,
+      latestPubDate: latestPubDate,
+      nextUpdateDate: nextUpdateDate,
       endDate: null, // RSS には終了日の記載がないため null
       updatedAt: today,
       // run-scraper.js のマージ処理が期待するフラット形式

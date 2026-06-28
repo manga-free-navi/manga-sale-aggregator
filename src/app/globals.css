@@ -470,6 +470,66 @@ button, input, select {
   box-shadow: 0 0 15px rgba(0, 173, 255, 0.5);
 }
 
+/* 5.5 コミックDAYS */
+.btn-comicdays {
+  background: linear-gradient(135deg, #0082c8, #005b8c);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-comicdays:hover {
+  box-shadow: 0 0 15px rgba(0, 130, 200, 0.5);
+}
+
+/* 5.6 となりのヤングジャンプ */
+.btn-tonarinoyj {
+  background: linear-gradient(135deg, #333333, #111111);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff !important;
+}
+.btn-tonarinoyj:hover {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* 5.7 ヤンマガWeb */
+.btn-yanmaga {
+  background: linear-gradient(135deg, #ff3b30, #b81414);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-yanmaga:hover {
+  box-shadow: 0 0 15px rgba(255, 59, 48, 0.5);
+}
+
+/* 5.8 くらげバンチ */
+.btn-kuragebunch {
+  background: linear-gradient(135deg, #e95464, #b52a39);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-kuragebunch:hover {
+  box-shadow: 0 0 15px rgba(233, 84, 100, 0.5);
+}
+
+/* 5.9 コミックガルド */
+.btn-comicgardo {
+  background: linear-gradient(135deg, #f39c12, #b97507);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-comicgardo:hover {
+  box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+}
+
+/* 5.10 MAGCOMI */
+.btn-magcomi {
+  background: linear-gradient(135deg, #990000, #660000);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-magcomi:hover {
+  box-shadow: 0 0 15px rgba(153, 0, 0, 0.5);
+}
+
 /* 6. サンデーうぇぶり */
 .btn-sundaywebry {
   background: linear-gradient(135deg, #f25b22, #c84311);
@@ -1015,5 +1075,33 @@ button, input, select {
 @keyframes badge-pulse {
   0% { transform: scale(1); }
   100% { transform: scale(1.03); }
+}
+
+/* ＝ 無料連載エピソード直接リンク＆スケジュール ＝ */
+.free-episode-btn {
+  transition: var(--transition-smooth);
+}
+.free-episode-btn:hover {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
+}
+.free-episode-btn:active {
+  transform: translateY(0);
+}
+
+.update-schedule-container {
+  border-left: 3px solid var(--accent-cyan) !important;
+}
+
+[data-theme="light"] .free-episode-btn {
+  background: rgba(16, 185, 129, 0.06) !important;
+  color: #059669 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+[data-theme="light"] .free-episode-btn:hover {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: #059669 !important;
 }
 

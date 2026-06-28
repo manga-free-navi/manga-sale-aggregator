@@ -9,6 +9,13 @@ export interface StoreDeal {
   discountRate: number;
 }
 
+export interface FreeEpisode {
+  title: string;
+  fullTitle: string;
+  url: string;
+  pubDate: string;
+}
+
 export interface Book {
   id: string;
   title: string;
@@ -22,6 +29,12 @@ export interface Book {
   volsFreeText?: string;
   /** RSSから取得した無料公開エピソード数（ジャンプ+/うぇぶりRSS系のみ） */
   freeEpisodeCount?: number;
+  /** 無料公開エピソードの詳細情報リスト */
+  freeEpisodes?: FreeEpisode[];
+  /** 最新公開日 */
+  latestPubDate?: string;
+  /** 次回更新予定日 */
+  nextUpdateDate?: string;
   /** コンテンツ種別: 'free_serialization'=無料連載 / 'limited_free'=期間限定無料 / 'sale'=セール */
   category?: 'free_serialization' | 'limited_free' | 'sale';
   stores: {
@@ -36,6 +49,35 @@ interface BookCardProps {
   books: Book[]; // シリーズに属する本の配列
   animeVideos?: any[]; // アニメ配信情報リスト
   gameSales?: any[]; // 関連ゲームセールデータ
+}
+
+/**
+ * 日付表示用のフォーマットヘルパー (例: 2026-06-27 -> 6月27日)
+ */
+function formatDisplayDate(dateStr: string): string {
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return `${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日`;
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+/**
+ * 曜日付きの日付表示用のフォーマットヘルパー (例: 2026-06-27 -> 6月27日 (土))
+ */
+function formatDisplayDateWithDay(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const day = days[d.getDay()];
+    const parts = dateStr.split('-');
+    return `${parseInt(parts[1], 10)}月${parseInt(parts[2], 10)}日 (${day})`;
+  } catch (e) {
+    return dateStr;
+  }
 }
 
 /**
@@ -291,6 +333,26 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'サンデーうぇぶり', btnClass: 'btn-sundaywebry', action: '読む' };
       case 'sundaywebry_free':
         return { name: 'サンデーうぇぶり（無料）', btnClass: 'btn-sundaywebry', action: '無料で読む' };
+      case 'magapoke':
+        return { name: 'マガポケ', btnClass: 'btn-magapoke', action: '無料で読む' };
+      case 'magapoke_campaign':
+        return { name: 'マガポケ（キャンペーン）', btnClass: 'btn-magapoke', action: '無料で読む' };
+      case 'comicdays':
+        return { name: 'コミックDAYS', btnClass: 'btn-comicdays', action: '無料で読む' };
+      case 'comicdays_campaign':
+        return { name: 'コミックDAYS（キャンペーン）', btnClass: 'btn-comicdays', action: '無料で読む' };
+      case 'tonarinoyj':
+        return { name: 'となジャン', btnClass: 'btn-tonarinoyj', action: '無料で読む' };
+      case 'yanmaga':
+        return { name: 'ヤンマガWeb', btnClass: 'btn-yanmaga', action: '無料で読む' };
+      case 'yanmaga_campaign':
+        return { name: 'ヤンマガWeb（キャンペーン）', btnClass: 'btn-yanmaga', action: '無料で読む' };
+      case 'kuragebunch':
+        return { name: 'くらげバンチ', btnClass: 'btn-kuragebunch', action: '無料で読む' };
+      case 'comicgardo':
+        return { name: 'コミックガルド', btnClass: 'btn-comicgardo', action: '無料で読む' };
+      case 'magcomi':
+        return { name: 'MAGCOMI', btnClass: 'btn-magcomi', action: '無料で読む' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }
@@ -615,6 +677,77 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
             <span className="original-price">¥{bestDeal.originalPrice.toLocaleString()}</span>
           )}
         </div>
+
+        {/* 無料連載向け：無料エピソードの直接リンクと更新スケジュール */}
+        {currentBook.category === 'free_serialization' && (
+          <div className="free-serialization-details" style={{ margin: '0.8rem 0' }}>
+            {/* エピソードリンク一覧 */}
+            {currentBook.freeEpisodes && currentBook.freeEpisodes.length > 0 && (
+              <div className="free-episodes-container" style={{ marginBottom: '0.6rem' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '0.3rem' }}>
+                  📖 無料公開中のエピソード（直接読めます）：
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  {currentBook.freeEpisodes.map((ep, idx) => (
+                    <a
+                      key={idx}
+                      href={ep.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <button
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '4px',
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                          background: 'rgba(16, 185, 129, 0.08)',
+                          color: '#10b981',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        className="free-episode-btn"
+                        id={`free-ep-btn-${currentBook.id}-${idx}`}
+                      >
+                        {ep.title} ↗
+                      </button>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 公開日・次回更新日 */}
+            {(currentBook.latestPubDate || currentBook.nextUpdateDate) && (
+              <div className="update-schedule-container" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+                padding: '0.5rem 0.7rem',
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                fontSize: '0.68rem',
+                color: 'var(--text-secondary)'
+              }}>
+                {currentBook.latestPubDate && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span style={{ fontSize: '0.8rem' }}>📅</span>
+                    <span>公開日: <strong>{formatDisplayDate(currentBook.latestPubDate)}</strong></span>
+                  </div>
+                )}
+                {currentBook.nextUpdateDate && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span style={{ fontSize: '0.8rem' }}>🔄</span>
+                    <span>次回更新予定: <strong>{formatDisplayDateWithDay(currentBook.nextUpdateDate)}</strong></span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* あらすじ */}
         <div className="description-wrapper">
