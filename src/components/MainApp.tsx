@@ -656,6 +656,7 @@ export default function MainApp() {
           { label: 'くらげバンチ', emoji: '🪼', keys: ['kuragebunch'] },
           { label: 'コミックガルド', emoji: '🛡️', keys: ['comicgardo'] },
           { label: 'MAGCOMI', emoji: '🏰', keys: ['magcomi'] },
+          { label: 'ビッコミ', emoji: '🍊', keys: ['biccomic'] },
           { label: '楽天Kobo', emoji: '📚', keys: ['rakuten'] },
           { label: 'シーモア', emoji: '🌊', keys: ['seimor'] },
           { label: 'BOOKWALKER', emoji: '🎮', keys: ['bookwalker'] },
