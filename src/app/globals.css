@@ -530,6 +530,16 @@ button, input, select {
   box-shadow: 0 0 15px rgba(153, 0, 0, 0.5);
 }
 
+/* 5.11 ビッコミ */
+.btn-biccomic {
+  background: linear-gradient(135deg, #e60012, #aa000b);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-biccomic:hover {
+  box-shadow: 0 0 15px rgba(230, 0, 18, 0.5);
+}
+
 /* 6. サンデーうぇぶり */
 .btn-sundaywebry {
   background: linear-gradient(135deg, #f25b22, #c84311);

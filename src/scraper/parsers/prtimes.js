@@ -18,7 +18,8 @@ const MANGA_DOMAINS = [
   'renta.papy.co.jp',
   'mechacomic.jp',
   'manga.line.me',
-  'piccoma.com'
+  'piccoma.com',
+  'biccomic.jp'
 ];
 
 /**

@@ -354,6 +354,8 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'コミックガルド', btnClass: 'btn-comicgardo', action: '無料で読む' };
       case 'magcomi':
         return { name: 'MAGCOMI', btnClass: 'btn-magcomi', action: '無料で読む' };
+      case 'biccomic':
+        return { name: 'ビッコミ', btnClass: 'btn-biccomic', action: '無料で読む' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }

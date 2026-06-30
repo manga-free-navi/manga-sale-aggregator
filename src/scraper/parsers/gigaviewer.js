@@ -47,6 +47,11 @@ const GIGAVIEWER_SITES = [
     siteName: 'MAGCOMI（マッグガーデン）',
     rssUrl: 'https://magcomi.com/rss',
   },
+  {
+    storeKey: 'biccomic',
+    siteName: 'ビッコミ（小学館）',
+    rssUrl: 'https://biccomic.jp/rss',
+  },
 ];
 
 /**
