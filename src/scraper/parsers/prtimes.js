@@ -19,7 +19,8 @@ const MANGA_DOMAINS = [
   'mechacomic.jp',
   'manga.line.me',
   'piccoma.com',
-  'biccomic.jp'
+  'biccomic.jp',
+  'bigcomics.jp'
 ];
 
 /**

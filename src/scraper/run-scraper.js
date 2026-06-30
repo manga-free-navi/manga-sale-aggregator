@@ -14,6 +14,7 @@ const { parseMagapoke } = require('./parsers/magapoke'); // マガポケ
 const { parseMagapokeCampaign } = require('./parsers/magapokeCampaign'); // マガポケ キャンペーン
 const { parseComicdaysCampaign } = require('./parsers/comicdaysCampaign'); // コミックDAYS キャンペーン
 const { parseYanmaga } = require('./parsers/yanmaga'); // ヤンマガWeb
+const { parseBiccomicCampaign } = require('./parsers/biccomicCampaign'); // ビッコミ キャンペーン
 
 
 
@@ -201,7 +202,7 @@ async function run() {
   } catch (gigaError) {
     console.error('[GigaViewer] 取得に失敗したため、キャッシュデータから復元します:', gigaError.message);
     // jumpplus・sundaywebry・comicdays・tonarinoyj・kuragebunch・comicgardo・magcomi ストアキーを持つキャッシュデータを復元
-    const gigaStoreKeys = ['jumpplus', 'sundaywebry', 'comicdays', 'tonarinoyj', 'kuragebunch', 'comicgardo', 'magcomi'];
+    const gigaStoreKeys = ['jumpplus', 'sundaywebry', 'comicdays', 'tonarinoyj', 'kuragebunch', 'comicgardo', 'magcomi', 'biccomic'];
     for (const storeKey of gigaStoreKeys) {
       const gigaCache = cachedBooks.filter(b => Object.keys(b.stores).includes(storeKey)).map(b => ({
         id: b.id,
@@ -431,6 +432,37 @@ async function run() {
     
     console.log(`[ヤンマガWeb] キャッシュから ${yanmagaCache.length + yanmagaCampaignCache.length} 件 (連載: ${yanmagaCache.length}, キャンペーン: ${yanmagaCampaignCache.length}) を復元しました。`);
     allBooks = allBooks.concat(yanmagaCache).concat(yanmagaCampaignCache);
+  }
+
+  // 2.8.5 ビッコミ キャンペーン（期間限定無料）
+  try {
+    const biccomicCampaignBooks = await parseBiccomicCampaign();
+    if (biccomicCampaignBooks && biccomicCampaignBooks.length > 0) {
+      console.log(`[ビッコミキャンペーン] ${biccomicCampaignBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(biccomicCampaignBooks);
+    } else {
+      throw new Error('取得件数が0件です');
+    }
+  } catch (biccomicCampaignError) {
+    console.error('[ビッコミキャンペーン] 取得に失敗したため、キャッシュデータから復元します:', biccomicCampaignError.message);
+    const biccomicCampaignCache = cachedBooks.filter(b => Object.keys(b.stores).includes('biccomic') && b.id.startsWith('biccomic_campaign_')).map(b => ({
+      id: b.id,
+      title: b.title,
+      author: b.author,
+      publisher: b.publisher,
+      imageUrl: b.imageUrl,
+      genre: b.genre,
+      description: b.description,
+      endDate: b.endDate,
+      updatedAt: b.updatedAt,
+      store: 'biccomic',
+      url: b.stores.biccomic.url,
+      originalPrice: b.stores.biccomic.originalPrice,
+      salePrice: b.stores.biccomic.salePrice,
+      discountRate: b.stores.biccomic.discountRate
+    }));
+    console.log(`[ビッコミキャンペーン] キャッシュから ${biccomicCampaignCache.length} 件を復元しました。`);
+    allBooks = allBooks.concat(biccomicCampaignCache);
   }
 
 
@@ -755,7 +787,7 @@ async function run() {
         // GigaViewer 系 / スクレイピング Webマンガは話数連載型のため、
         // 巻数表記がなくても正当なコミックとして維持する
         const isGigaviewerManga = group.some(b =>
-          Object.keys(b.stores).some(k => ['jumpplus', 'sundaywebry', 'comicdays', 'tonarinoyj', 'magapoke', 'magapoke_campaign', 'comicdays_campaign', 'yanmaga', 'yanmaga_campaign', 'kuragebunch', 'comicgardo', 'magcomi'].includes(k))
+          Object.keys(b.stores).some(k => ['jumpplus', 'sundaywebry', 'comicdays', 'tonarinoyj', 'magapoke', 'magapoke_campaign', 'comicdays_campaign', 'yanmaga', 'yanmaga_campaign', 'kuragebunch', 'comicgardo', 'magcomi', 'biccomic'].includes(k))
         );
         // ジャンプ＋ 無料キャンペーン・復刻連載は巻数なしでも正当な作品として維持
         const isJumpplusCampaign = group.some(b =>
@@ -765,6 +797,11 @@ async function run() {
         const isWebryFree = group.some(b =>
           Object.keys(b.stores).includes('sundaywebry_free')
         );
+        // ビッコミ キャンペーンは巻数なしでも正当な作品として維持
+        const isBiccomicCampaign = group.some(b =>
+          b.id.includes('biccomic_campaign_')
+        );
+
         if (isBookwalkerCampaign) {
           console.log(`[BOOK☆WALKERキャンペーン維持] ${group[0].title}`);
         } else if (isGigaviewerManga) {
@@ -773,6 +810,8 @@ async function run() {
           console.log(`[ジャンプ＋キャンペーン維持] ${group[0].title}`);
         } else if (isWebryFree) {
           console.log(`[サンデーうぇぶり無料維持] ${group[0].title}`);
+        } else if (isBiccomicCampaign) {
+          console.log(`[ビッコミキャンペーン維持] ${group[0].title}`);
         } else {
           // 巻数が一切判定できなかったシリーズは、小説や単発本の可能性が高いため丸ごと除外
           console.log(`[除外] 巻数不明（非コミックの可能性あり）のため除外: ${group[0].title} (著者: ${group[0].author})`);
@@ -782,7 +821,7 @@ async function run() {
       
       // シリーズ状態を示すテキストの自動生成 (volsFreeText)
       let volsFreeText = "";
-      if (group.some(b => Object.keys(b.stores).some(k => k === 'jumpplus_campaign' || k === 'magapoke_campaign' || k === 'comicdays_campaign'))) {
+      if (group.some(b => Object.keys(b.stores).some(k => k === 'jumpplus_campaign' || k === 'magapoke_campaign' || k === 'comicdays_campaign') || b.id.includes('biccomic_campaign_'))) {
         // キャンペーン系は「無料キャンペーン」として表示
         volsFreeText = "無料キャンペーン";
       } else if (group.some(b => Object.keys(b.stores).includes('sundaywebry_free'))) {
@@ -833,6 +872,7 @@ async function run() {
       // キャンペーン系（ジャンプ+キャンペーン・BOOKWALKER・期間限定100%OFF）は「期間限定無料」
       else if (
         allStoreKeys.some(k => ['jumpplus_campaign', 'bookwalker', 'magapoke_campaign', 'comicdays_campaign', 'yanmaga_campaign'].includes(k)) ||
+        group.some(b => b.id.includes('biccomic_campaign_')) ||
         (group.some(b => b.endDate) && allDeals.some(d => d && d.discountRate === 100))
       ) {
         category = 'limited_free';
