@@ -258,6 +258,48 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
     window.dispatchEvent(new Event('readListUpdated'));
   };
 
+  // お気に入りのトグル処理
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    if (mounted) {
+      const favList = JSON.parse(localStorage.getItem('manga_favorites_list') || '[]');
+      setIsFavorite(favList.includes(currentBook.id));
+    }
+  }, [currentBook.id, mounted]);
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const favList = JSON.parse(localStorage.getItem('manga_favorites_list') || '[]');
+    let newList;
+    if (isFavorite) {
+      newList = favList.filter((id: string) => id !== currentBook.id);
+    } else {
+      newList = [...favList, currentBook.id];
+    }
+    localStorage.setItem('manga_favorites_list', JSON.stringify(newList));
+    setIsFavorite(!isFavorite);
+    
+    // 他のコンポーネントやお気に入り数などを同期させるためのイベント
+    window.dispatchEvent(new Event('mangaFavoritesUpdated'));
+  };
+
+  // 直近3日以内の最新話更新判定
+  const isRecentlyUpdated = useMemo(() => {
+    if (!currentBook.latestPubDate) return false;
+    try {
+      const pubDate = new Date(currentBook.latestPubDate);
+      const today = new Date();
+      pubDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      const diffTime = today.getTime() - pubDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 2;
+    } catch (e) {
+      return false;
+    }
+  }, [currentBook.latestPubDate]);
+
   // セール終了までの残り日数を計算
   const remainingDaysText = useMemo(() => {
     if (!currentBook.endDate || !mounted) return null;
@@ -394,6 +436,35 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         }
       </div>
 
+      {/* お気に入りボタン */}
+      <button 
+        className={`favorite-toggle-btn ${isFavorite ? 'active' : ''}`}
+        onClick={handleToggleFavorite}
+        title={isFavorite ? 'お気に入りから外す' : 'お気に入りに追加する (更新時に最上部へピン留め)'}
+        id={`fav-toggle-${currentBook.id}`}
+        style={{
+          position: 'absolute',
+          top: '0.75rem',
+          right: '4.5rem',
+          zIndex: 10,
+          background: isFavorite ? 'rgba(251, 191, 36, 0.95)' : 'rgba(11, 15, 25, 0.75)',
+          color: isFavorite ? '#0b0f19' : '#fbbf24',
+          border: isFavorite ? 'none' : '1px solid rgba(251, 191, 36, 0.4)',
+          padding: '0.25rem 0.5rem',
+          borderRadius: '4px',
+          fontSize: '0.65rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          backdropFilter: 'blur(8px)',
+          transition: 'all 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2px'
+        }}
+      >
+        {isFavorite ? '★ お気に入り' : '☆ お気に入り'}
+      </button>
+
       {/* 既読しおりボタン */}
       <button 
         className={`read-toggle-btn ${isRead ? 'read' : ''}`}
@@ -422,6 +493,11 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
 
       {/* 表紙画像 */}
       <div className="card-image-wrapper">
+        {isRecentlyUpdated && (
+          <div className="update-pulse-badge">
+            🆕 更新あり！
+          </div>
+        )}
         {currentBook.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

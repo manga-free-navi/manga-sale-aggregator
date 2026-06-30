@@ -1115,3 +1115,33 @@ button, input, select {
   border-color: #059669 !important;
 }
 
+/* ＝ お気に入り ＆ 更新ありバッジ用スタイル ＝ */
+.update-pulse-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: linear-gradient(135deg, #06b6d4 0%, #10b981 100%);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  z-index: 5;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
+  animation: pulse-glow 1.5s infinite alternate ease-in-out;
+  letter-spacing: 0.5px;
+}
+
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.85;
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.75);
+    transform: scale(1.03);
+  }
+}
+

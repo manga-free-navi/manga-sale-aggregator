@@ -108,7 +108,9 @@ export default function MainApp() {
   const [sortBy, setSortBy] = useState('discountDesc');
   const [hideRead, setHideRead] = useState(false);
   const [showOnlyAllFree, setShowOnlyAllFree] = useState(false); // 全話無料のみ表示フラグ
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false); // お気に入りのみ表示フラグ
   const [readList, setReadList] = useState<string[]>([]);
+  const [favoritesList, setFavoritesList] = useState<string[]>([]);
   // ストアタグ絞り込み（複数選択可）
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   // カテゴリ絞り込み
@@ -121,7 +123,7 @@ export default function MainApp() {
   // フィルター変更時にページを 1 に自動リセット (selectedStores 配列の参照変化による無限ループ防止)
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedGenre, sortBy, JSON.stringify(selectedStores), selectedCategory, hideRead, showOnlyAllFree]);
+  }, [searchTerm, selectedGenre, sortBy, JSON.stringify(selectedStores), selectedCategory, hideRead, showOnlyAllFree, showOnlyFavorites]);
 
   // ページ変更時に画面最上部へスムーズスクロール (初回マウント時はスクロール位置を維持)
   const isFirstRender = useRef(true);
@@ -270,6 +272,7 @@ export default function MainApp() {
       const savedSort = localStorage.getItem('manga_sort_by');
       const savedHideRead = localStorage.getItem('manga_hide_read');
       const savedShowOnlyAllFree = localStorage.getItem('manga_show_only_all_free');
+      const savedShowOnlyFavorites = localStorage.getItem('manga_show_only_favorites');
       const savedTheme = localStorage.getItem('manga-theme') || 'dark';
       const savedViewMode = localStorage.getItem('manga-view-mode') || 'grid';
       
@@ -277,6 +280,7 @@ export default function MainApp() {
       if (savedSort) setSortBy(savedSort);
       if (savedHideRead) setHideRead(savedHideRead === 'true');
       if (savedShowOnlyAllFree) setShowOnlyAllFree(savedShowOnlyAllFree === 'true');
+      if (savedShowOnlyFavorites) setShowOnlyFavorites(savedShowOnlyFavorites === 'true');
       
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
@@ -316,6 +320,13 @@ export default function MainApp() {
     } catch (e) { console.error(e); }
   };
 
+  const handleShowOnlyFavoritesChange = (show: boolean) => {
+    setShowOnlyFavorites(show);
+    try {
+      localStorage.setItem('manga_show_only_favorites', String(show));
+    } catch (e) { console.error(e); }
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
@@ -337,6 +348,17 @@ export default function MainApp() {
     syncReadList();
     window.addEventListener('readListUpdated', syncReadList);
     return () => window.removeEventListener('readListUpdated', syncReadList);
+  }, []);
+
+  // お気に入り状態の同期（LocalStorageの監視）
+  useEffect(() => {
+    const syncFavoritesList = () => {
+      const list = JSON.parse(localStorage.getItem('manga_favorites_list') || '[]');
+      setFavoritesList(list);
+    };
+    syncFavoritesList();
+    window.addEventListener('mangaFavoritesUpdated', syncFavoritesList);
+    return () => window.removeEventListener('mangaFavoritesUpdated', syncFavoritesList);
   }, []);
 
   // 動的ジャンル一覧の抽出 (順序を完全に一意にするため .sort() を追加)
@@ -384,6 +406,11 @@ export default function MainApp() {
     // 2.9 全話無料のみ表示（isAllFreeが明示的にtrueの作品のみに厳密に絞り込み）
     if (showOnlyAllFree) {
       result = result.filter((b) => (b as any).isAllFree === true);
+    }
+
+    // 2.95 お気に入り作品のみ表示
+    if (showOnlyFavorites) {
+      result = result.filter((b) => favoritesList.includes(b.id));
     }
 
     // 3. シリーズごとにグループ化
@@ -486,7 +513,50 @@ export default function MainApp() {
     });
 
     return groupedResults;
-  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory, showOnlyAllFree]);
+  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory, showOnlyAllFree, showOnlyFavorites, favoritesList]);
+
+  // お気に入りかつ直近3日以内に最新話更新があったグループを抽出
+  const updatedFavoritesGroups = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // 1. books からお気に入りに入っているものだけを抽出
+    const favBooks = books.filter(b => favoritesList.includes(b.id));
+    if (favBooks.length === 0) return [];
+
+    // 2. シリーズごとにグループ化
+    const favGroupsMap = new Map<string, Book[]>();
+    favBooks.forEach((book) => {
+      const key = getSeriesKey(book.title);
+      if (!favGroupsMap.has(key)) favGroupsMap.set(key, []);
+      favGroupsMap.get(key)!.push(book);
+    });
+
+    const favGroupedResults: SeriesGroup[] = [];
+    favGroupsMap.forEach((groupBooks, seriesKey) => {
+      groupBooks.sort((a, b) => a.title.localeCompare(b.title));
+      favGroupedResults.push({
+        id: groupBooks[0].id,
+        seriesKey: seriesKey,
+        books: groupBooks,
+      });
+    });
+
+    // 3. 直近3日以内の更新があったシリーズのみ抽出
+    return favGroupedResults.filter(group => {
+      const repBook = group.books[0];
+      if (!repBook.latestPubDate) return false;
+      try {
+        const pubDate = new Date(repBook.latestPubDate);
+        pubDate.setHours(0, 0, 0, 0);
+        const diffTime = today.getTime() - pubDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays <= 2;
+      } catch (e) {
+        return false;
+      }
+    });
+  }, [books, favoritesList]);
 
   // ページネーションの計算とデータ分割
   const totalPages = Math.ceil(filteredAndSortedGroups.length / itemsPerPage);
@@ -508,6 +578,46 @@ export default function MainApp() {
           今日すぐに読める「無料 漫画」のチェックや、新しい作品との出会いにお役立てください。
         </p>
       </section>
+
+      {/* ⭐ お気に入り更新ピン留めセクション */}
+      {updatedFavoritesGroups.length > 0 && (
+        <section className="favorites-update-section" style={{
+          marginBottom: '2.5rem',
+          padding: '1.5rem',
+          background: 'rgba(251, 191, 36, 0.04)',
+          borderRadius: '16px',
+          border: '1px solid rgba(251, 191, 36, 0.2)',
+          boxShadow: '0 8px 32px rgba(251, 191, 36, 0.05)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <h2 style={{
+            fontSize: '1.15rem',
+            fontWeight: 800,
+            color: '#fbbf24',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginBottom: '1.25rem',
+            letterSpacing: '-0.2px'
+          }}>
+            <span>⭐ お気に入り作品の更新情報 (直近3日以内)</span>
+          </h2>
+          <div className="book-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '1.5rem'
+          }}>
+            {updatedFavoritesGroups.map(group => (
+              <BookCard 
+                key={`fav-update-${group.id}`}
+                books={group.books}
+                animeVideos={animeVideos}
+                gameSales={gameSales}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 操作バー (表示モード・テーマ切り替え・同期) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -735,6 +845,16 @@ export default function MainApp() {
             style={{ width: '16px', height: '16px', cursor: 'pointer' }}
           />
           🏆 全話（全巻）無料のみ表示
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-show-only-favorites">
+          <input
+            type="checkbox"
+            checked={showOnlyFavorites}
+            onChange={(e) => handleShowOnlyFavoritesChange(e.target.checked)}
+            id="checkbox-show-only-favorites"
+            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+          />
+          ⭐ お気に入り作品のみ表示
         </label>
       </div>
 
