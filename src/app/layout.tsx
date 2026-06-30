@@ -158,6 +158,13 @@ export default function RootLayout({
               >
                 <span>🎮 ゲームセール</span>
               </a>
+              <a 
+                href={process.env.NEXT_PUBLIC_POIKATSU_SITE_URL || "https://manga-free-navi.github.io/poikatsu-aggregator/"} 
+                className="header-tab"
+                id="tab-to-poikatsu"
+              >
+                <span>💰 ポイ活情報</span>
+              </a>
             </div>
 
             <nav className="nav-links">
