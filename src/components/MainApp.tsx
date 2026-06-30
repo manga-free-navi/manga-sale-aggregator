@@ -381,13 +381,9 @@ export default function MainApp() {
       result = result.filter((b) => (b as any).category === selectedCategory);
     }
 
-    // 2.9 全話無料のみ表示
+    // 2.9 全話無料のみ表示（isAllFreeが明示的にtrueの作品のみに厳密に絞り込み）
     if (showOnlyAllFree) {
-      result = result.filter(
-        (b) =>
-          (b as any).isAllFree === true ||
-          (b as any).category === 'free_serialization'
-      );
+      result = result.filter((b) => (b as any).isAllFree === true);
     }
 
     // 3. シリーズごとにグループ化

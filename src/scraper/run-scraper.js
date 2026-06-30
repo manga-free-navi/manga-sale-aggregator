@@ -847,8 +847,12 @@ async function run() {
         // タイトルから不要な装飾を除去
         const cleanedTitle = book.title.replace(/【期間限定無料】|【期間限定無料お試し版】|【期間限定無料冊子】|【セール】/g, '').trim();
         
-        // 全話・全巻無料キーワードの検出
-        const allFreeKeywords = ['全話無料', '全巻無料', '全話大解放', '全話開放', '全話大開放', '全巻開放', '全巻大開放', '完全無料', '全話イッキ', '全巻イッキ'];
+        // 全話・全巻無料キーワードの検出 (最新話除く・最新刊除く等の細かい設定や、既刊全巻、チケット不要も含む)
+        const allFreeKeywords = [
+          '全話無料', '全巻無料', '全話大解放', '全話開放', '全話大開放', '全巻開放', '全巻大開放', '完全無料', '全話イッキ', '全巻イッキ',
+          '最新話除く', '最新話を除く', '最新話以外', '最新刊除く', '最新刊を除く', '最新刊以外',
+          '既刊全巻', '既刊無料', '既刊すべて', '全話チケットなし', 'チケット不要', 'チケットなし'
+        ];
         const textToCheck = (volsFreeText + ' ' + (book.volsFreeText || '') + ' ' + (book.description || '')).toLowerCase();
         const isAllFree = allFreeKeywords.some(keyword => textToCheck.includes(keyword));
 
