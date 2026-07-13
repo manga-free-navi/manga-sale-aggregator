@@ -27,7 +27,8 @@
     "url": "https://shonenjumpplus.com/search?q=HUNTER%C3%97HUNTER",
     "originalPrice": 500,
     "salePrice": 0,
-    "discountRate": 100
+    "discountRate": 100,
+    "isAllFree": true
   },
   {
     "id": "manual-tokyorev-featured",

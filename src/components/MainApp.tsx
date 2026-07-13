@@ -105,6 +105,7 @@ export default function MainApp() {
         endDate: item.endDate || null,
         description: item.description || '',
         updatedAt: item.updatedAt || new Date().toISOString(),
+        isAllFree: item.isAllFree === true, // 手動キャンペーンでの全話無料設定を反映
         stores: {
           [storeKey]: {
             url: item.url || '',
@@ -115,7 +116,27 @@ export default function MainApp() {
         }
       };
     });
-    return [...manualList, ...autoList];
+    
+    const combined = [...manualList, ...autoList];
+
+    // 全話無料キーワードの動的判定と補正
+    return combined.map(book => {
+      const textForCheck = (book.title + ' ' + book.description + ' ' + (book.volsFreeText || '')).toLowerCase();
+      const hasAllFreeKeyword = 
+        textForCheck.includes('全話無料') || 
+        textForCheck.includes('全巻無料') || 
+        textForCheck.includes('全話公開') || 
+        textForCheck.includes('全巻公開') || 
+        textForCheck.includes('分割で全話') || 
+        textForCheck.includes('順次全話') || 
+        textForCheck.includes('順次無料') || 
+        textForCheck.includes('全話対象');
+        
+      return {
+        ...book,
+        isAllFree: book.isAllFree || hasAllFreeKeyword
+      };
+    });
   }, []);
 
   // 目玉（超人気）作品かつ無料公開されているキャンペーンの抽出
