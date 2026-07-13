@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 // 自動収集データと、手動キャンペーンデータを両方インポートして結合します
 import initialBooks from '../data/sales.json';
 import manualBooks from '../data/manual_sales.json';
-import BookCard, { Book, StoreDeal } from './BookCard';
+import BookCard, { Book, StoreDeal, isFeaturedBook } from './BookCard';
 import FilterBar from './FilterBar';
 import AdContainer from './AdContainer';
 import LazyRender from './LazyRender';
@@ -103,6 +103,26 @@ export default function MainApp() {
     return [...manualList, ...autoList];
   }, []);
 
+  // 目玉（超人気）作品かつ無料公開されているキャンペーンの抽出
+  const featuredFreeBooks = useMemo(() => {
+    const featuredList: Book[] = [];
+    const seenTitles = new Set<string>();
+
+    for (const book of books) {
+      if (seenTitles.has(book.title)) continue;
+
+      const isFree = book.category === 'limited_free' || 
+                     book.category === 'free_serialization' || 
+                     Object.values(book.stores).some(s => s && (s.discountRate === 100 || s.salePrice === 0));
+
+      if (isFree && isFeaturedBook(book)) {
+        seenTitles.add(book.title);
+        featuredList.push(book);
+      }
+    }
+    return featuredList;
+  }, [books]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('discountDesc');
@@ -141,6 +161,42 @@ export default function MainApp() {
   const [syncCodeInput, setSyncCodeInput] = useState('');
   const [syncError, setSyncError] = useState('');
   const [syncSuccess, setSyncSuccess] = useState(false);
+
+  // 「マイおすすめ本棚」機能用ステート
+  const [sharedBookshelfTitle, setSharedBookshelfTitle] = useState('');
+  const [sharedBookshelfItems, setSharedBookshelfItems] = useState<{ id: string; c: string }[]>([]);
+  const [isViewingSharedBookshelf, setIsViewingSharedBookshelf] = useState(false);
+
+  // 本棚作成フォーム用ステート
+  const [showCreator, setShowCreator] = useState(false);
+  const [creatorTitle, setCreatorTitle] = useState('');
+  const [creatorComments, setCreatorComments] = useState<Record<string, string>>({});
+  const [createdUrl, setCreatedUrl] = useState('');
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // クエリパラメータの解析 (本棚共有の復元)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const b64Data = params.get('bookshelf');
+      if (b64Data) {
+        // マルチバイト文字に対応したデコード処理
+        const decodedJson = decodeURIComponent(
+          escape(atob(decodeURI(b64Data)))
+        );
+        const data = JSON.parse(decodedJson);
+        if (data && data.t && Array.isArray(data.b)) {
+          setSharedBookshelfTitle(data.t);
+          setSharedBookshelfItems(data.b);
+          setIsViewingSharedBookshelf(true);
+          // 共有本棚閲覧時は、スクロール位置を最上部に
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse shared bookshelf data:', e);
+    }
+  }, []);
 
   // 3Way・テーマ・表示モード用ステート
   const [theme, setTheme] = useState('dark');
@@ -265,7 +321,46 @@ export default function MainApp() {
     }
   };
 
-  // 閲覧設定の初期復元
+  // 「マイおすすめ本棚」リンク生成 ＆ コピー処理
+  const handleGenerateBookshelf = () => {
+    try {
+      if (favoritesList.length === 0) return;
+      
+      const title = creatorTitle.trim() || '私のおすすめ無料漫画！';
+      const items = favoritesList.map(id => ({
+        id,
+        c: (creatorComments[id] || '').trim().substring(0, 100) // 最大100文字に制限
+      }));
+      
+      const data = { t: title, b: items };
+      const jsonStr = JSON.stringify(data);
+      
+      // 日本語の文字化けを防ぐためのBase64エンコード
+      const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+      
+      const url = `${window.location.origin}${window.location.pathname}?bookshelf=${encodeURIComponent(b64)}`;
+      setCreatedUrl(url);
+      
+      navigator.clipboard.writeText(url).then(() => {
+        setCopiedUrl(true);
+        setTimeout(() => setCopiedUrl(false), 2000);
+      }).catch(err => {
+        console.error('Failed to copy bookshelf URL:', err);
+      });
+    } catch (e) {
+      console.error('Error generating bookshelf link:', e);
+    }
+  };
+
+  // 本棚シェア用X（Twitter）遷移処理
+  const handleShareBookshelfX = () => {
+    const title = creatorTitle.trim() || '私のおすすめ無料漫画！';
+    const text = `【無料＆セール漫画ナビ】『${title}』を公開しました！私のおすすめ無料コミックはこちらからチェック！ #無料漫画 #セール漫画`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(createdUrl)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // 閲覧設定 of 初期復元
   useEffect(() => {
     try {
       const savedGenre = localStorage.getItem('manga_filter_genre');
@@ -371,7 +466,23 @@ export default function MainApp() {
   const filteredAndSortedGroups = useMemo(() => {
     let result = [...books];
 
-    // 1. キーワード検索 (タイトル or 著者名)
+    if (isViewingSharedBookshelf) {
+      // 共有本棚の作品のみを抽出して、コメントを注入
+      const sharedIds = sharedBookshelfItems.map(item => item.id);
+      const sharedBooks = books
+        .filter(b => sharedIds.includes(b.id))
+        .map(b => {
+          const item = sharedBookshelfItems.find(i => i.id === b.id);
+          return {
+            ...b,
+            bookshelfComment: item ? item.c : ''
+          };
+        });
+      // 共有された順番にソート
+      sharedBooks.sort((a, b) => sharedIds.indexOf(a.id) - sharedIds.indexOf(b.id));
+      result = sharedBooks;
+    } else {
+      // 1. キーワード検索 (タイトル or 著者名)
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -407,11 +518,11 @@ export default function MainApp() {
     if (showOnlyAllFree) {
       result = result.filter((b) => (b as any).isAllFree === true);
     }
-
     // 2.95 お気に入り作品のみ表示
     if (showOnlyFavorites) {
       result = result.filter((b) => favoritesList.includes(b.id));
     }
+  }
 
     // 3. シリーズごとにグループ化
     const groupsMap = new Map<string, Book[]>();
@@ -456,7 +567,8 @@ export default function MainApp() {
     });
 
     // 4. グループの並び替え (代表本またはグループ内最大値を基準にします)
-    groupedResults.sort((a, b) => {
+    if (!isViewingSharedBookshelf) {
+      groupedResults.sort((a, b) => {
       const repA = a.books[0];
       const repB = b.books[0];
 
@@ -511,9 +623,10 @@ export default function MainApp() {
       
       return 0;
     });
+  }
 
     return groupedResults;
-  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory, showOnlyAllFree, showOnlyFavorites, favoritesList]);
+  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory, showOnlyAllFree, showOnlyFavorites, favoritesList, isViewingSharedBookshelf, sharedBookshelfItems]);
 
   // お気に入りかつ直近3日以内に最新話更新があったグループを抽出
   const updatedFavoritesGroups = useMemo(() => {
@@ -562,301 +675,507 @@ export default function MainApp() {
   const totalPages = Math.ceil(filteredAndSortedGroups.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedGroups = useMemo(() => {
+    if (isViewingSharedBookshelf) {
+      return filteredAndSortedGroups;
+    }
     return filteredAndSortedGroups.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedGroups, startIndex]);
+  }, [filteredAndSortedGroups, startIndex, isViewingSharedBookshelf]);
 
 
 
 
   return (
     <div className="container" style={{ paddingTop: '20px' }}>
-      {/* ヒーローセクション */}
-      <section className="hero">
-        <h1>無料 漫画 ＆ 激安セール中のコミック情報まとめ</h1>
-        <p>
-          主要な電子書籍ストアや公式マンガアプリで配信されている、期間限定の「無料 漫画」やお得な割引セール情報を毎日自動集約。<br />
-          今日すぐに読める「無料 漫画」のチェックや、新しい作品との出会いにお役立てください。
-        </p>
-      </section>
+      {/* 🎨 共有本棚のヘッダー表示 */}
+      {isViewingSharedBookshelf && (
+        <section className="bookshelf-container">
+          <div className="bookshelf-header">
+            <h2 className="bookshelf-title">
+              🎨 {sharedBookshelfTitle || 'おすすめ本棚'}
+            </h2>
+            <button
+              onClick={() => {
+                setIsViewingSharedBookshelf(false);
+                if (typeof window !== 'undefined') {
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                }
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                padding: '0.5rem 1.25rem',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              通常の画面に戻る
+            </button>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 0 }}>
+            ユーザーが厳選したおすすめコミックのリストです。コメント付きで紹介中！
+          </p>
+        </section>
+      )}
 
-      {/* ⭐ お気に入り更新ピン留めセクション */}
-      {updatedFavoritesGroups.length > 0 && (
-        <section className="favorites-update-section" style={{
-          marginBottom: '2.5rem',
-          padding: '1.5rem',
-          background: 'rgba(251, 191, 36, 0.04)',
-          borderRadius: '16px',
-          border: '1px solid rgba(251, 191, 36, 0.2)',
-          boxShadow: '0 8px 32px rgba(251, 191, 36, 0.05)',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <h2 style={{
-            fontSize: '1.15rem',
-            fontWeight: 800,
-            color: '#fbbf24',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginBottom: '1.25rem',
-            letterSpacing: '-0.2px'
-          }}>
-            <span>⭐ お気に入り作品の更新情報 (直近3日以内)</span>
-          </h2>
-          <div className="book-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '1.5rem'
-          }}>
-            {updatedFavoritesGroups.map(group => (
-              <BookCard 
-                key={`fav-update-${group.id}`}
-                books={group.books}
-                animeVideos={animeVideos}
-                gameSales={gameSales}
-              />
-            ))}
+      {/* ヒーローセクション */}
+      {!isViewingSharedBookshelf && (
+        <section className="hero">
+          <h1>無料 漫画 ＆ 激安セール中のコミック情報まとめ</h1>
+          <p>
+            主要な電子書籍ストアや公式マンガアプリで配信されている、期間限定の「無料 漫画」やお得な割引セール情報を毎日自動集約。<br />
+            今日すぐに読める「無料 漫画」のチェックや、新しい作品との出会いにお役立てください。
+          </p>
+        </section>
+      )}
+
+      {/* 🔥 超注目！目玉作品の無料公開ショーケース */}
+      {!isViewingSharedBookshelf && featuredFreeBooks.length > 0 && (
+        <section className="featured-showcase">
+          <div className="featured-showcase-title-box">
+            <h2 className="featured-showcase-title">
+              🔥 超注目！大ヒット作品無料公開中 🔥
+            </h2>
+            <span style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: 800 }}>
+              期間限定の豪華キャンペーン中！
+            </span>
+          </div>
+          <div className="featured-showcase-list">
+            {featuredFreeBooks.map(book => {
+              // 残り日数の計算
+              let remainingText = '';
+              if (book.endDate) {
+                const end = new Date(book.endDate);
+                const today = new Date();
+                const diff = end.getTime() - today.getTime();
+                const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                remainingText = days > 0 ? `あと ${days} 日` : '本日終了';
+              }
+
+              // 最初に見つかった有効なストアのボタンをレンダリングするためのヘルパー
+              const firstStoreKey = Object.keys(book.stores)[0];
+              const storeUrl = book.stores[firstStoreKey]?.url || '#';
+
+              return (
+                <div 
+                  key={book.id} 
+                  className="featured-showcase-card"
+                  onClick={() => {
+                    // 通常のカードまでスクロールする処理
+                    const el = document.getElementById(`manga-card-${book.id}`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // 一時的に目立たせるためのフラッシュ効果
+                      el.style.outline = '3px solid #fbbf24';
+                      setTimeout(() => {
+                        el.style.outline = 'none';
+                      }, 2000);
+                    }
+                  }}
+                >
+                  <img 
+                    src={book.imageUrl || '/placeholder.png'} 
+                    alt={book.title} 
+                    className="featured-showcase-img" 
+                  />
+                  <div className="featured-showcase-info">
+                    <div>
+                      <div className="featured-showcase-name" title={book.title}>
+                        {book.title}
+                      </div>
+                      <div className="featured-showcase-author">
+                        {book.author}
+                      </div>
+                    </div>
+                    
+                    <div className="featured-showcase-meta">
+                      <div className="featured-showcase-vols">
+                        {book.volsFreeText || '無料公開中！'}
+                      </div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                        <span className="featured-showcase-date">
+                          {remainingText}
+                        </span>
+                        <a 
+                          href={storeUrl}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()} // 親のクリックイベントを止める
+                          className="featured-showcase-store-btn"
+                          style={{
+                            background: 'linear-gradient(135deg, #f59e0b, #d97706)'
+                          }}
+                        >
+                          無料で読む ➔
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* 操作バー (表示モード・テーマ切り替え・同期) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        {/* 左側：表示モード切り替え */}
-        <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(255, 255, 255, 0.02)', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(255,255,255,0.1))' }}>
-          <button
-            onClick={() => handleSetViewMode('grid')}
-            style={{
-              background: viewMode === 'grid' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-              border: 'none',
-              color: viewMode === 'grid' ? 'var(--text-main)' : 'var(--text-secondary)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              padding: '0.35rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+      {/* 🎨 マイおすすめ本棚の作成UI */}
+      {!isViewingSharedBookshelf && favoritesList.length > 0 && (
+        <section className="bookshelf-creator-box">
+          <div 
+            onClick={() => setShowCreator(!showCreator)}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
           >
-            通常グリッド
-          </button>
-          <button
-            onClick={() => handleSetViewMode('gallery')}
-            style={{
-              background: viewMode === 'gallery' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-              border: 'none',
-              color: viewMode === 'gallery' ? 'var(--text-main)' : 'var(--text-secondary)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              padding: '0.35rem 0.75rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            ジャケ買いギャラリー
-          </button>
-        </div>
+            <h3 className="bookshelf-creator-title" style={{ margin: 0 }}>
+              🎨 お気に入り作品から「マイおすすめ本棚」を作成してシェアする ({favoritesList.length}作品)
+            </h3>
+            <span style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+              {showCreator ? '閉じる ▲' : '作成フォームを開く ▼'}
+            </span>
+          </div>
 
-        {/* 右側：同期＆テーマ切り替え */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-              color: 'var(--text-secondary)',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              padding: '0.45rem 0.95rem',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              transition: 'all 0.2s',
-              backdropFilter: 'blur(5px)'
-            }}
-          >
-            {theme === 'dark' ? 'ライトネオン' : 'ダークネオン'}
-          </button>
-          <button
-            onClick={() => setShowSyncModal(true)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-              color: 'var(--text-secondary)',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              padding: '0.45rem 0.95rem',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              transition: 'all 0.2s',
-              backdropFilter: 'blur(5px)'
-            }}
-          >
-            同期・バックアップ
-          </button>
-        </div>
-      </div>
+          {showCreator && (
+            <div style={{ marginTop: '1.25rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '6px' }}>
+                  本棚のタイトル（例: 絶対にハマるバトル漫画5選！）
+                </label>
+                <input
+                  type="text"
+                  placeholder="私のおすすめ無料漫画！"
+                  value={creatorTitle}
+                  onChange={(e) => setCreatorTitle(e.target.value.substring(0, 40))}
+                  className="search-input"
+                  style={{ width: '100%' }}
+                />
+              </div>
 
-      {/* 検索・フィルタバー */}
-      <FilterBar
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedGenre={selectedGenre}
-        setSelectedGenre={handleGenreChange}
-        sortBy={sortBy}
-        setSortBy={handleSortChange}
-        genres={genres}
-      />
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, marginBottom: '8px' }}>
+                  各作品へのおすすめ一言コメント（最大100文字）
+                </label>
+                <div className="bookshelf-creator-list">
+                  {favoritesList.map(id => {
+                    const book = books.find(b => b.id === id);
+                    if (!book) return null;
+                    return (
+                      <div key={id} className="bookshelf-creator-item">
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {book.title}
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="この作品のおすすめポイントや一言コメントを入力..."
+                          value={creatorComments[id] || ''}
+                          onChange={(e) => setCreatorComments({
+                            ...creatorComments,
+                            [id]: e.target.value.substring(0, 100)
+                          })}
+                          className="bookshelf-creator-comment-input"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-      {/* カテゴリタグ（無料連載 / 期間限定無料 / セール） */}
-      <div style={{ marginBottom: '0.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '0.25rem' }}>種別：</span>
-        {([
-          { value: 'all',               label: 'すべて',       emoji: '' },
-          { value: 'free_serialization', label: '無料連載',    emoji: '📺' },
-          { value: 'limited_free',       label: '期間限定無料', emoji: '⏰' },
-          { value: 'sale',               label: 'セール',       emoji: '💰' },
-        ] as const).map(cat => {
-          const active = selectedCategory === cat.value;
-          // カテゴリごとにアクティブ色を変える
-          const activeGradient =
-            cat.value === 'free_serialization' ? 'linear-gradient(135deg,#10b981,#059669)' :
-            cat.value === 'limited_free'       ? 'linear-gradient(135deg,#f59e0b,#d97706)' :
-            cat.value === 'sale'               ? 'linear-gradient(135deg,#ef4444,#dc2626)' :
-                                                 'linear-gradient(135deg,#6366f1,#a855f7)';
-          const activeShadow =
-            cat.value === 'free_serialization' ? '0 0 10px rgba(16,185,129,0.4)' :
-            cat.value === 'limited_free'       ? '0 0 10px rgba(245,158,11,0.4)' :
-            cat.value === 'sale'               ? '0 0 10px rgba(239,68,68,0.4)'  :
-                                                 '0 0 10px rgba(99,102,241,0.4)';
-          return (
-            <button
-              key={cat.value}
-              id={`category-tag-${cat.value}`}
-              onClick={() => setSelectedCategory(cat.value)}
-              style={{
-                fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.8rem',
-                borderRadius: '20px', border: '1px solid', cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                background: active ? activeGradient : 'rgba(255,255,255,0.04)',
-                borderColor: active ? 'transparent' : 'rgba(255,255,255,0.12)',
-                color: active ? '#fff' : 'var(--text-secondary)',
-                boxShadow: active ? activeShadow : 'none',
-              }}
-            >{cat.emoji ? `${cat.emoji} ` : ''}{cat.label}</button>
-          );
-        })}
-      </div>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  onClick={handleGenerateBookshelf}
+                  style={{
+                    background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-purple))',
+                    border: 'none',
+                    color: '#fff',
+                    padding: '0.6rem 1.5rem',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {copiedUrl ? '🔗 コピー完了！' : '🔗 本棚シェアリンクを生成＆コピー'}
+                </button>
 
-      {/* ストアタグ絞り込み */}
-      {((): React.ReactNode => {
-        // タグ定義：名前、絵文字、対応ストアキー配列
-        const storeTags: { label: string; emoji: string; keys: string[] }[] = [
-          { label: 'ジャンプ+', emoji: '⚡', keys: ['jumpplus', 'jumpplus_campaign'] },
-          { label: 'うぇぶり', emoji: '☀️', keys: ['sundaywebry', 'sundaywebry_free'] },
-          { label: 'マガポケ', emoji: '📢', keys: ['magapoke', 'magapoke_campaign'] },
-          { label: 'コミックDAYS', emoji: '📆', keys: ['comicdays', 'comicdays_campaign'] },
-          { label: 'となジャン', emoji: '🎯', keys: ['tonarinoyj'] },
-          { label: 'ヤンマガWeb', emoji: '🔥', keys: ['yanmaga', 'yanmaga_campaign'] },
-          { label: 'くらげバンチ', emoji: '🪼', keys: ['kuragebunch'] },
-          { label: 'コミックガルド', emoji: '🛡️', keys: ['comicgardo'] },
-          { label: 'MAGCOMI', emoji: '🏰', keys: ['magcomi'] },
-          { label: 'ビッコミ', emoji: '🍊', keys: ['biccomic'] },
-          { label: '楽天Kobo', emoji: '📚', keys: ['rakuten'] },
-          { label: 'シーモア', emoji: '🌊', keys: ['seimor'] },
-          { label: 'BOOKWALKER', emoji: '🎮', keys: ['bookwalker'] },
-          { label: 'Kindle', emoji: '📱', keys: ['amazon'] },
-        ];
-        const isTagActive = (keys: string[]) => keys.some(k => selectedStores.includes(k));
-        const toggleStore = (keys: string[]) => {
-          setSelectedStores(prev => {
-            const allIn = keys.every(k => prev.includes(k));
-            if (allIn) return prev.filter(k => !keys.includes(k));
-            const merged = [...prev];
-            keys.forEach(k => { if (!merged.includes(k)) merged.push(k); });
-            return merged;
-          });
-        };
-        return (
-          <div style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '0.25rem' }}>配信元：</span>
-            <button
-              id="store-tag-all"
-              onClick={() => setSelectedStores([])}
-              style={{
-                fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.7rem',
-                borderRadius: '20px', border: '1px solid', cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                background: selectedStores.length === 0 ? 'linear-gradient(135deg,#6366f1,#a855f7)' : 'rgba(255,255,255,0.04)',
-                borderColor: selectedStores.length === 0 ? 'transparent' : 'rgba(255,255,255,0.12)',
-                color: selectedStores.length === 0 ? '#fff' : 'var(--text-secondary)',
-                boxShadow: selectedStores.length === 0 ? '0 0 10px rgba(99,102,241,0.4)' : 'none',
-              }}
-            >すべて</button>
-            {storeTags.map(tag => {
-              const active = isTagActive(tag.keys);
+                {createdUrl && (
+                  <button
+                    onClick={handleShareBookshelfX}
+                    style={{
+                      background: '#1d9bf0',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '0.6rem 1.5rem',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <span>𝕏</span> Xで本棚をポストする
+                  </button>
+                )}
+              </div>
+              
+              {createdUrl && (
+                <div style={{ marginTop: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.75rem', wordBreak: 'break-all', border: '1px solid var(--border-color)' }}>
+                  <strong style={{ color: 'var(--accent-cyan)' }}>生成された共有リンク:</strong><br />
+                  {createdUrl}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 操作バー ＆ フィルター ＆ トグル類 */}
+      {!isViewingSharedBookshelf && (
+        <>
+          {/* 操作バー (表示モード・テーマ切り替え・同期) */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {/* 左側：表示モード切り替え */}
+            <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(255, 255, 255, 0.02)', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(255,255,255,0.1))' }}>
+              <button
+                onClick={() => handleSetViewMode('grid')}
+                style={{
+                  background: viewMode === 'grid' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  border: 'none',
+                  color: viewMode === 'grid' ? 'var(--text-main)' : 'var(--text-secondary)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                通常グリッド
+              </button>
+              <button
+                onClick={() => handleSetViewMode('gallery')}
+                style={{
+                  background: viewMode === 'gallery' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  border: 'none',
+                  color: viewMode === 'gallery' ? 'var(--text-main)' : 'var(--text-secondary)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ジャケ買いギャラリー
+              </button>
+            </div>
+
+            {/* 右側：同期＆テーマ切り替え */}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={toggleTheme}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  transition: 'all 0.2s',
+                  backdropFilter: 'blur(5px)'
+                }}
+              >
+                {theme === 'dark' ? 'ライトネオン' : 'ダークネオン'}
+              </button>
+              <button
+                onClick={() => setShowSyncModal(true)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  transition: 'all 0.2s',
+                  backdropFilter: 'blur(5px)'
+                }}
+              >
+                同期・バックアップ
+              </button>
+            </div>
+          </div>
+
+          {/* 検索・フィルタバー */}
+          <FilterBar
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedGenre={selectedGenre}
+            setSelectedGenre={handleGenreChange}
+            sortBy={sortBy}
+            setSortBy={handleSortChange}
+            genres={genres}
+          />
+
+          {/* カテゴリタグ（無料連載 / 期間限定無料 / セール） */}
+          <div style={{ marginBottom: '0.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '0.25rem' }}>種別：</span>
+            {([
+              { value: 'all',               label: 'すべて',       emoji: '' },
+              { value: 'free_serialization', label: '無料連載',    emoji: '📺' },
+              { value: 'limited_free',       label: '期間限定無料', emoji: '⏰' },
+              { value: 'sale',               label: 'セール',       emoji: '💰' },
+            ] as const).map(cat => {
+              const active = selectedCategory === cat.value;
+              const activeGradient =
+                cat.value === 'free_serialization' ? 'linear-gradient(135deg,#10b981,#059669)' :
+                cat.value === 'limited_free'       ? 'linear-gradient(135deg,#f59e0b,#d97706)' :
+                cat.value === 'sale'               ? 'linear-gradient(135deg,#ef4444,#dc2626)' :
+                                                     'linear-gradient(135deg,#6366f1,#a855f7)';
+              const activeShadow =
+                cat.value === 'free_serialization' ? '0 0 10px rgba(16,185,129,0.4)' :
+                cat.value === 'limited_free'       ? '0 0 10px rgba(245,158,11,0.4)' :
+                cat.value === 'sale'               ? '0 0 10px rgba(239,68,68,0.4)'  :
+                                                     '0 0 10px rgba(99,102,241,0.4)';
               return (
                 <button
-                  key={tag.label}
-                  id={`store-tag-${tag.label}`}
-                  onClick={() => toggleStore(tag.keys)}
+                  key={cat.value}
+                  id={`category-tag-${cat.value}`}
+                  onClick={() => setSelectedCategory(cat.value)}
+                  style={{
+                    fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.8rem',
+                    borderRadius: '20px', border: '1px solid', cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    background: active ? activeGradient : 'rgba(255,255,255,0.04)',
+                    borderColor: active ? 'transparent' : 'rgba(255,255,255,0.12)',
+                    color: active ? '#fff' : 'var(--text-secondary)',
+                    boxShadow: active ? activeShadow : 'none',
+                  }}
+                >{cat.emoji ? `${cat.emoji} ` : ''}{cat.label}</button>
+              );
+            })}
+          </div>
+
+          {/* ストアタグ絞り込み */}
+          {((): React.ReactNode => {
+            const storeTags: { label: string; emoji: string; keys: string[] }[] = [
+              { label: 'ジャンプ+', emoji: '⚡', keys: ['jumpplus', 'jumpplus_campaign'] },
+              { label: 'うぇぶり', emoji: '☀️', keys: ['sundaywebry', 'sundaywebry_free'] },
+              { label: 'マガポケ', emoji: '📢', keys: ['magapoke', 'magapoke_campaign'] },
+              { label: 'コミックDAYS', emoji: '📆', keys: ['comicdays', 'comicdays_campaign'] },
+              { label: 'となジャン', emoji: '🎯', keys: ['tonarinoyj'] },
+              { label: 'ヤンマガWeb', emoji: '🔥', keys: ['yanmaga', 'yanmaga_campaign'] },
+              { label: 'くらげバンチ', emoji: '🪼', keys: ['kuragebunch'] },
+              { label: 'コミックガルド', emoji: '🛡️', keys: ['comicgardo'] },
+              { label: 'MAGCOMI', emoji: '🏰', keys: ['magcomi'] },
+              { label: 'ビッコミ', emoji: '🍊', keys: ['biccomic'] },
+              { label: 'COMIC FUZ', emoji: '🎨', keys: ['comicfuz', 'comicfuz_campaign'] },
+              { label: '楽天Kobo', emoji: '📚', keys: ['rakuten'] },
+              { label: 'シーモア', emoji: '🌊', keys: ['seimor'] },
+              { label: 'BOOKWALKER', emoji: '🎮', keys: ['bookwalker'] },
+              { label: 'Kindle', emoji: '📱', keys: ['amazon'] },
+            ];
+            const isTagActive = (keys: string[]) => keys.some(k => selectedStores.includes(k));
+            const toggleStore = (keys: string[]) => {
+              setSelectedStores(prev => {
+                const allIn = keys.every(k => prev.includes(k));
+                if (allIn) return prev.filter(k => !keys.includes(k));
+                const merged = [...prev];
+                keys.forEach(k => { if (!merged.includes(k)) merged.push(k); });
+                return merged;
+              });
+            };
+            return (
+              <div style={{ marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '0.25rem' }}>配信元：</span>
+                <button
+                  id="store-tag-all"
+                  onClick={() => setSelectedStores([])}
                   style={{
                     fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.7rem',
                     borderRadius: '20px', border: '1px solid', cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    background: active ? 'linear-gradient(135deg,#0ea5e9,#6366f1)' : 'rgba(255,255,255,0.04)',
-                    borderColor: active ? 'transparent' : 'rgba(255,255,255,0.12)',
-                    color: active ? '#fff' : 'var(--text-secondary)',
-                    boxShadow: active ? '0 0 10px rgba(14,165,233,0.35)' : 'none',
+                    background: selectedStores.length === 0 ? 'linear-gradient(135deg,#6366f1,#a855f7)' : 'rgba(255,255,255,0.04)',
+                    borderColor: selectedStores.length === 0 ? 'transparent' : 'rgba(255,255,255,0.12)',
+                    color: selectedStores.length === 0 ? '#fff' : 'var(--text-secondary)',
+                    boxShadow: selectedStores.length === 0 ? '0 0 10px rgba(99,102,241,0.4)' : 'none',
                   }}
-                >{tag.emoji} {tag.label}</button>
-              );
-            })}
-          </div>
-        );
-      })()}
+                >すべて</button>
+                {storeTags.map(tag => {
+                  const active = isTagActive(tag.keys);
+                  return (
+                    <button
+                      key={tag.label}
+                      id={`store-tag-${tag.label}`}
+                      onClick={() => toggleStore(tag.keys)}
+                      style={{
+                        fontSize: '0.72rem', fontWeight: 700, padding: '0.25rem 0.7rem',
+                        borderRadius: '20px', border: '1px solid', cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        background: active ? 'linear-gradient(135deg,#0ea5e9,#6366f1)' : 'rgba(255,255,255,0.04)',
+                        borderColor: active ? 'transparent' : 'rgba(255,255,255,0.12)',
+                        color: active ? '#fff' : 'var(--text-secondary)',
+                        boxShadow: active ? '0 0 10px rgba(14,165,233,0.35)' : 'none',
+                      }}
+                    >{tag.emoji} {tag.label}</button>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
-      {/* 補助コントロール（件数 ＆ 各種トグル） */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', fontSize: '0.9rem' }}>
-        <div style={{ color: 'var(--text-secondary)' }}>
-          該当シリーズ: <strong>{filteredAndSortedGroups.length}</strong> 作品
-        </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-hide-read">
-          <input
-            type="checkbox"
-            checked={hideRead}
-            onChange={(e) => handleHideReadChange(e.target.checked)}
-            id="checkbox-hide-read"
-            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-          />
-          既読にした作品を非表示にする
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-show-only-all-free">
-          <input
-            type="checkbox"
-            checked={showOnlyAllFree}
-            onChange={(e) => handleShowOnlyAllFreeChange(e.target.checked)}
-            id="checkbox-show-only-all-free"
-            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-          />
-          🏆 全話（全巻）無料のみ表示
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-show-only-favorites">
-          <input
-            type="checkbox"
-            checked={showOnlyFavorites}
-            onChange={(e) => handleShowOnlyFavoritesChange(e.target.checked)}
-            id="checkbox-show-only-favorites"
-            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-          />
-          ⭐ お気に入り作品のみ表示
-        </label>
-      </div>
+          {/* 補助コントロール（件数 ＆ 各種トグル） */}
+          <div style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', fontSize: '0.9rem' }}>
+            <div style={{ color: 'var(--text-secondary)' }}>
+              該当シリーズ: <strong>{filteredAndSortedGroups.length}</strong> 作品
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-hide-read">
+              <input
+                type="checkbox"
+                checked={hideRead}
+                onChange={(e) => handleHideReadChange(e.target.checked)}
+                id="checkbox-hide-read"
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              既読にした作品を非表示にする
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-show-only-all-free">
+              <input
+                type="checkbox"
+                checked={showOnlyAllFree}
+                onChange={(e) => handleShowOnlyAllFreeChange(e.target.checked)}
+                id="checkbox-show-only-all-free"
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              🏆 全話（全巻）無料のみ表示
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', cursor: 'pointer' }} id="label-show-only-favorites">
+              <input
+                type="checkbox"
+                checked={showOnlyFavorites}
+                onChange={(e) => handleShowOnlyFavoritesChange(e.target.checked)}
+                id="checkbox-show-only-favorites"
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              ⭐ お気に入り作品のみ表示
+            </label>
+          </div>
+        </>
+      )}
 
       {/* 漫画一覧領域 */}
       {filteredAndSortedGroups.length === 0 ? (
@@ -966,7 +1285,7 @@ export default function MainApp() {
       )}
 
       {/* ページネーションコントローラー */}
-      {totalPages > 1 && (
+      {!isViewingSharedBookshelf && totalPages > 1 && (
         <div style={{
           display: 'flex',
           justifyContent: 'center',

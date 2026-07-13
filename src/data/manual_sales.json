@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "id": "manual-comicfuz-yurucamp",
+    "title": "ゆるキャン△",
+    "author": "あｆろ",
+    "publisher": "芳文社",
+    "imageUrl": "https://comic-fuz.com/assets/placheholder/ogp.png",
+    "genre": "きららコミックス",
+    "endDate": "2026-12-31",
+    "description": "山梨県を舞台に、女子高校生たちがキャンプをしたり日常生活を送る様子を緩やかに描く人気作！",
+    "store": "comicfuz",
+    "url": "https://comic-fuz.com/manga/3",
+    "originalPrice": 0,
+    "salePrice": 0,
+    "discountRate": 100
+  },
+  {
+    "id": "manual-hunterhunter-featured",
+    "title": "HUNTER×HUNTER",
+    "author": "冨樫義博",
+    "publisher": "集英社",
+    "imageUrl": "https://images-fe.ssl-images-amazon.com/images/I/8159U%2B5k-mL._AC_UL600_SR600,600_.jpg",
+    "genre": "少年マンガ",
+    "endDate": "2026-07-19",
+    "description": "【コミックス累計1億部突破＆最新39巻発売記念！】大ヒット冒険バトル漫画『HUNTER×HUNTER』が期間限定でコミックス340話分順次無料公開中！",
+    "store": "jumpplus_campaign",
+    "url": "https://zebrack-comic.shueisha.co.jp/title/1202",
+    "originalPrice": 500,
+    "salePrice": 0,
+    "discountRate": 100
+  }
+]

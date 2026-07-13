@@ -38,12 +38,53 @@ export interface Book {
   /** コンテンツ種別: 'free_serialization'=無料連載 / 'limited_free'=期間限定無料 / 'sale'=セール */
   category?: 'free_serialization' | 'limited_free' | 'sale';
   isAllFree?: boolean; // 全話無料フラグ
+  bookshelfComment?: string; // 本棚共有用おすすめコメント
   stores: {
     rakuten?: StoreDeal;
     seimor?: StoreDeal;
     amazon?: StoreDeal;
     [key: string]: StoreDeal | undefined;
   };
+}
+
+export const FEATURED_TITLE_KEYWORDS = [
+  'hunter×hunter', 'ハンターハンター', 
+  'one piece', 'ワンピース',
+  '僕のヒーローアカデミア', 'ヒロアカ',
+  '呪術廻戦', '鬼滅の刃',
+  '名探偵コナン', 'キングダム',
+  '進撃の巨人', 'ブルーロック',
+  '怪獣8号', 'チェンソーマン',
+  'spy×family', 'スパイファミリー',
+  '葬送のフリーレン', 'フリーレン',
+  '【推しの子】', '推しの子',
+  'ドラゴンボール', 'naruto', 'ナルト',
+  'スラムダンク', 'slam dunk',
+  'ハイキュー', '銀魂', 'るろうに剣心',
+  '坂本デイズ', 'sakamoto days',
+  'ダンダダン', 'チ。', '怪獣８号', '東京卍リベンジャーズ', '東京リベンジャーズ'
+];
+
+export const FEATURED_AUTHORS = [
+  '冨樫義博', '尾田栄一郎', '鳥山明', '井上雄彦', '吾峠呼世晴', 
+  '芥見下々', '堀越耕平', '荒木飛呂彦', '藤本タツキ', '高橋留美子',
+  '青山剛昌', '原泰久', '諫山創', '春場ねぎ', '赤坂アカ', '山口つばさ',
+  '遠藤達哉', '山田鐘人', 'アベツカサ'
+];
+
+export function isFeaturedBook(book: Book): boolean {
+  if (!book) return false;
+  
+  const titleLower = book.title.toLowerCase();
+  const authorLower = book.author ? book.author.toLowerCase() : '';
+  
+  // 1. タイトルキーワード判定
+  const matchesTitle = FEATURED_TITLE_KEYWORDS.some(keyword => titleLower.includes(keyword));
+  
+  // 2. 著者判定
+  const matchesAuthor = FEATURED_AUTHORS.some(author => authorLower.includes(author));
+  
+  return matchesTitle || matchesAuthor;
 }
 
 interface BookCardProps {
@@ -398,6 +439,10 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'MAGCOMI', btnClass: 'btn-magcomi', action: '無料で読む' };
       case 'biccomic':
         return { name: 'ビッコミ', btnClass: 'btn-biccomic', action: '無料で読む' };
+      case 'comicfuz':
+        return { name: 'COMIC FUZ', btnClass: 'btn-comicfuz', action: '無料で読む' };
+      case 'comicfuz_campaign':
+        return { name: 'COMIC FUZ（キャンペーン）', btnClass: 'btn-comicfuz', action: '無料で読む' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }
@@ -416,8 +461,16 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
     return sortedDeals[0];
   }, [currentBook.stores]);
 
+  const featured = isFeaturedBook(currentBook);
+
   return (
-    <article className="book-card" id={`manga-card-${currentBook.id}`} style={{ position: 'relative' }}>
+    <article className={`book-card ${featured ? 'featured-glow-border' : ''}`} id={`manga-card-${currentBook.id}`} style={{ position: 'relative' }}>
+      {/* 超注目目玉バッジ */}
+      {featured && (
+        <div className="mega-featured-badge">
+          ✨ 殿堂入り無料 🔥
+        </div>
+      )}
       {/* カテゴリバッジ（左上） & 割引率バッジ */}
       <div className="discount-tag" style={{
         background: currentBook.category === 'free_serialization'
@@ -829,6 +882,13 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 本棚おすすめコメント */}
+        {currentBook.bookshelfComment && (
+          <div className="bookshelf-comment-bubble">
+            {currentBook.bookshelfComment}
           </div>
         )}
 

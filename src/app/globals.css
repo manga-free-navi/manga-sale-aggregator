@@ -610,6 +610,16 @@ button, input, select {
   box-shadow: 0 0 15px rgba(255, 127, 0, 0.4);
 }
 
+/* 12.5 COMIC FUZ */
+.btn-comicfuz {
+  background: linear-gradient(135deg, #ff6699, #cc3399);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-comicfuz:hover {
+  box-shadow: 0 0 15px rgba(255, 102, 153, 0.5);
+}
+
 
 /* 広告プレースホルダー */
 .ad-wrapper {
@@ -1144,4 +1154,362 @@ button, input, select {
     transform: scale(1.03);
   }
 }
+
+/* ＝ マイおすすめ本棚セクション＆編集用スタイル ＝ */
+.bookshelf-container {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: rgba(139, 92, 246, 0.03);
+  border-radius: 20px;
+  border: 1px dashed rgba(139, 92, 246, 0.25);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(139, 92, 246, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.bookshelf-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-purple) 50%, var(--accent-pink) 100%);
+}
+
+.bookshelf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bookshelf-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fbbf24 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.1);
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bookshelf-comment-bubble {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  position: relative;
+  line-height: 1.45;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bookshelf-comment-bubble::before {
+  content: '💬 おすすめ理由:';
+  display: block;
+  font-weight: 800;
+  color: #c084fc;
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+}
+
+[data-theme="light"] .bookshelf-container {
+  background: rgba(124, 58, 237, 0.02);
+  border-color: rgba(124, 58, 237, 0.2);
+}
+
+[data-theme="light"] .bookshelf-comment-bubble {
+  background: rgba(124, 58, 237, 0.04);
+  border-color: rgba(124, 58, 237, 0.15);
+  color: #374151;
+}
+
+[data-theme="light"] .bookshelf-comment-bubble::before {
+  color: #7c3aed;
+}
+
+/* 本棚編集エリアスタイル */
+.bookshelf-creator-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.bookshelf-creator-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bookshelf-creator-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1.25rem;
+}
+
+.bookshelf-creator-item {
+  display: grid;
+  grid-template-columns: 1.5fr 3fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 640px) {
+  .bookshelf-creator-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+.bookshelf-creator-comment-input {
+  width: 100%;
+  background: var(--bg-dark-900);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.bookshelf-creator-comment-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.25);
+}
+
+/* ==========================================
+   🔥 目玉・超人気コミック無料キャンペーン強調スタイル
+   ========================================== */
+
+@keyframes featured-pulse {
+  0% {
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.35), 0 4px 15px rgba(0, 0, 0, 0.25);
+    border-color: rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.65), 0 4px 20px rgba(245, 158, 11, 0.2);
+    border-color: rgba(251, 191, 36, 1);
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.35), 0 4px 15px rgba(0, 0, 0, 0.25);
+    border-color: rgba(245, 158, 11, 0.7);
+  }
+}
+
+.featured-glow-border {
+  border: 2px solid rgba(245, 158, 11, 0.7) !important;
+  animation: featured-pulse 2.5s infinite ease-in-out;
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.03) 0%, rgba(0, 0, 0, 0) 100%) !important;
+}
+
+.featured-glow-border:hover {
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.85), 0 8px 30px rgba(245, 158, 11, 0.35) !important;
+  transform: translateY(-4px);
+  animation: none !important;
+  border-color: rgba(251, 191, 36, 1) !important;
+}
+
+/* 殿堂入り無料バッジ (右肩) */
+.mega-featured-badge {
+  position: absolute;
+  top: 10px;
+  right: 50px; /* お気に入りボタンの左側 */
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.5px;
+}
+
+/* 特設ショーケースエリア（最上部） */
+.featured-showcase {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.03) 100%);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.featured-showcase-title-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.featured-showcase-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.featured-showcase-list {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+}
+
+.featured-showcase-list::-webkit-scrollbar {
+  height: 6px;
+}
+
+.featured-showcase-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+.featured-showcase-list::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.3);
+  border-radius: 10px;
+}
+
+.featured-showcase-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.5);
+}
+
+/* カルーセル内カード */
+.featured-showcase-card {
+  flex: 0 0 320px;
+  display: flex;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 12px;
+  padding: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.featured-showcase-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(251, 191, 36, 0.8);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);
+  transform: translateY(-2px);
+}
+
+.featured-showcase-img {
+  width: 70px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.featured-showcase-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.featured-showcase-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.featured-showcase-author {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.featured-showcase-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.featured-showcase-vols {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.featured-showcase-stores {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.featured-showcase-store-btn {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.featured-showcase-date {
+  font-size: 0.68rem;
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* ライトモード対応 */
+[data-theme="light"] .featured-showcase {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(251, 191, 36, 0.02) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="light"] .featured-showcase-card {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+[data-theme="light"] .featured-showcase-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
 
