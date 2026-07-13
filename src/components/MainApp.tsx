@@ -70,6 +70,21 @@ function getBookMinPrice(bk: Book): number {
   return Math.min(...deals.map(d => d.salePrice));
 }
 
+function isValidMangaUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  if (
+    lower.includes('sample') || 
+    lower.includes('dummy') || 
+    lower.includes('your_') || 
+    lower === '#' || 
+    lower.startsWith('javascript:')
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export default function MainApp() {
   // 自動データと手動キャンペーンデータを結合（手動データの互換性を補正）
   const books = useMemo(() => {
@@ -111,9 +126,15 @@ export default function MainApp() {
     for (const book of books) {
       if (seenTitles.has(book.title)) continue;
 
-      const isFree = book.category === 'limited_free' || 
-                     book.category === 'free_serialization' || 
-                     Object.values(book.stores).some(s => s && (s.discountRate === 100 || s.salePrice === 0));
+      // 「有効なURL」かつ「無料（割引率100%または価格0）」のストアがあるかチェック
+      const hasFreeStore = Object.values(book.stores).some(s => 
+        s && (s.discountRate === 100 || s.salePrice === 0) && isValidMangaUrl(s.url)
+      );
+
+      // カテゴリ指定無料、かつ有効なストアURLが1つ以上ある場合も無料とみなす
+      const hasValidStore = Object.values(book.stores).some(s => s && isValidMangaUrl(s.url));
+      const isFree = hasFreeStore || 
+                     ((book.category === 'limited_free' || book.category === 'free_serialization') && hasValidStore);
 
       if (isFree && isFeaturedBook(book)) {
         seenTitles.add(book.title);
@@ -755,9 +776,26 @@ export default function MainApp() {
                 remainingText = days > 0 ? `あと ${days} 日` : '本日終了';
               }
 
-              // 最初に見つかった有効なストアのボタンをレンダリングするためのヘルパー
-              const firstStoreKey = Object.keys(book.stores)[0];
-              const storeUrl = book.stores[firstStoreKey]?.url || '#';
+              // 無料で、かつ有効なURLを持つストアを最優先で探索
+              let storeUrl = '#';
+              const storeKeys = Object.keys(book.stores);
+              
+              // 1. まず割引率100%または価格0の無料かつ有効なストアを探す
+              const freeStoreKey = storeKeys.find(key => {
+                const store = book.stores[key];
+                return store && (store.discountRate === 100 || store.salePrice === 0) && isValidMangaUrl(store.url);
+              });
+              
+              if (freeStoreKey) {
+                storeUrl = book.stores[freeStoreKey]?.url || '#';
+              } else {
+                // 2. なければ有効なURLを持ついずれかのストアを探す
+                const validStoreKey = storeKeys.find(key => {
+                  const store = book.stores[key];
+                  return store && isValidMangaUrl(store.url);
+                });
+                storeUrl = validStoreKey ? (book.stores[validStoreKey]?.url || '#') : '#';
+              }
 
               return (
                 <div 
