@@ -24,8 +24,23 @@
     "endDate": "2026-07-19",
     "description": "【コミックス累計1億部突破＆最新39巻発売記念！】大ヒット冒険バトル漫画『HUNTER×HUNTER』が期間限定でコミックス340話分順次無料公開中！",
     "store": "jumpplus_campaign",
-    "url": "https://zebrack-comic.shueisha.co.jp/title/1202",
+    "url": "https://shonenjumpplus.com/search?q=HUNTER%C3%97HUNTER",
     "originalPrice": 500,
+    "salePrice": 0,
+    "discountRate": 100
+  },
+  {
+    "id": "manual-tokyorev-featured",
+    "title": "東京卍リベンジャーズ",
+    "author": "和久井健",
+    "publisher": "講談社",
+    "imageUrl": "https://www.hanmoto.com/bd/img/9784063959383.jpg",
+    "genre": "少年・青年漫画",
+    "endDate": "2026-12-31",
+    "description": "【マガポケ無料連載中！】不良漫画の新機軸！タイムリープサスペンスの大ヒットコミック『東京卍リベンジャーズ』が無料公開中！",
+    "store": "magapoke_campaign",
+    "url": "https://pocket.shonenmagazine.com/episode/13932016480029113171",
+    "originalPrice": 460,
     "salePrice": 0,
     "discountRate": 100
   }
