@@ -85,6 +85,92 @@ function isValidMangaUrl(url: string | undefined | null): boolean {
   return true;
 }
 
+// 検索用の表記揺れ（シノニム）辞書
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  'hunter×hunter': ['ハンターハンター', 'hunter hunter', 'hunterhunter', 'hxh'],
+  'ハンターハンター': ['hunter×hunter', 'hunter hunter', 'hunterhunter', 'hxh', 'ハンター×ハンター'],
+  'hunterhunter': ['ハンターハンター', 'hunter hunter', 'hunter×hunter', 'hxh'],
+  'hunter hunter': ['ハンターハンター', 'hunterhunter', 'hunter×hunter', 'hxh']
+};
+
+// 検索文字列の正規化（スペース・特定記号の除去、大文字小文字の統一、ひらがなをカタカナに統一）
+function normalizeSearchText(text: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .replace(/[\s\-_/*×x・]/g, '') // スペースや各種記号（x, ×, 中黒等）を除去
+    .replace(/[ぁ-ん]/g, (s) => String.fromCharCode(s.charCodeAt(0) + 0x60)); // ひらがなをカタカナに変換して比較
+}
+
+// タイトル文字列から巻数（数値）を抽出するヘルパー
+function extractVolumeNumber(title: string): number | null {
+  if (!title) return null;
+  // 全角数字を半角に正規化
+  let t = title.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+  
+  // かっこ内が純粋な数字のみの場合 (例: "(1)", "（2）")
+  let match = t.match(/[\(（]\s*(\d+)\s*[\)）]/);
+  if (match) return parseInt(match[1], 10);
+  
+  // 第X巻、X巻、X話
+  match = t.match(/第?\s*(\d+)\s*[巻話作]/);
+  if (match) return parseInt(match[1], 10);
+  
+  // vol.X, volume.X, #X
+  match = t.match(/(?:vol|volume|#)\.?\s*(\d+)/i);
+  if (match) return parseInt(match[1], 10);
+  
+  // 末尾 of 数字
+  match = t.match(/\s+(\d+)\s*$/);
+  if (match) return parseInt(match[1], 10);
+  
+  return null;
+}
+
+// シリーズグループが「1巻のみ無料」であるか判定するヘルパー
+function isSingleVolumeFreeGroup(books: Book[]): boolean {
+  if (!books || books.length === 0) return false;
+  
+  const freeVols: number[] = [];
+  let hasFreeWithNoVolume = false;
+
+  books.forEach(b => {
+    // いずれかのストアで価格が0（無料）になっているかチェック
+    const isFree = Object.values(b.stores).some(s => s && s.salePrice === 0);
+    if (isFree) {
+      const volNum = extractVolumeNumber(b.title);
+      if (volNum !== null) {
+        if (!freeVols.includes(volNum)) {
+          freeVols.push(volNum);
+        }
+      } else {
+        hasFreeWithNoVolume = true;
+      }
+    }
+  });
+
+  // 無料巻数が「1巻のみ」であり、かつ巻数不明の無料巻もない場合
+  if (freeVols.length === 1 && freeVols[0] === 1 && !hasFreeWithNoVolume) {
+    return true;
+  }
+
+  // 文字列ベースでの追加判定（volsFreeText や description 等の記載から判定）
+  const textToCheck = books.map(b => `${b.volsFreeText || ''} ${b.title} ${b.description}`).join(' ').toLowerCase();
+  if (
+    /1巻(?:のみ)?無料/i.test(textToCheck) || 
+    /1巻(?:のみ)?100%off/i.test(textToCheck) ||
+    /1巻分無料/i.test(textToCheck)
+  ) {
+    // 複数巻無料（1〜2巻無料など）の表現がないことを確認
+    const hasMultipleVolsFree = /[1１][〜～\-ーお][2-9２-９\d]+巻/i.test(textToCheck) || /2巻以上無料/i.test(textToCheck);
+    if (!hasMultipleVolsFree) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export default function MainApp() {
   // 自動データと手動キャンペーンデータを結合（手動データの互換性を補正）
   const books = useMemo(() => {
@@ -120,7 +206,7 @@ export default function MainApp() {
     const combined = [...manualList, ...autoList];
 
     // 全話無料キーワードの動的判定と補正
-    return combined.map(book => {
+    const withAllFree = combined.map(book => {
       const textForCheck = (book.title + ' ' + book.description + ' ' + (book.volsFreeText || '')).toLowerCase();
       const hasAllFreeKeyword = 
         textForCheck.includes('全話無料') || 
@@ -136,6 +222,13 @@ export default function MainApp() {
         ...book,
         isAllFree: book.isAllFree || hasAllFreeKeyword
       };
+    });
+
+    // 期限切れのデータをフロントエンドでも除外（JSTの今日の日付と比較）
+    const todayJst = new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return withAllFree.filter(book => {
+      if (!(book as any).endDate) return true; // 終了日なし → 常に表示
+      return (book as any).endDate >= todayJst;  // 今日以降に終了するものは表示
     });
   }, []);
 
@@ -169,6 +262,7 @@ export default function MainApp() {
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('discountDesc');
   const [hideRead, setHideRead] = useState(false);
+  const [hideSingleVolumeFree, setHideSingleVolumeFree] = useState(false);
   const [showOnlyAllFree, setShowOnlyAllFree] = useState(false); // 全話無料のみ表示フラグ
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false); // お気に入りのみ表示フラグ
   const [readList, setReadList] = useState<string[]>([]);
@@ -526,12 +620,45 @@ export default function MainApp() {
     } else {
       // 1. キーワード検索 (タイトル or 著者名)
     if (searchTerm.trim() !== '') {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (b) =>
-          b.title.toLowerCase().includes(term) ||
-          b.author.toLowerCase().includes(term)
-      );
+      const term = searchTerm.toLowerCase().trim();
+      const normTerm = normalizeSearchText(term);
+      
+      result = result.filter((b) => {
+        const titleLower = b.title.toLowerCase();
+        const authorLower = b.author.toLowerCase();
+        const normTitle = normalizeSearchText(b.title);
+        const normAuthor = normalizeSearchText(b.author);
+        
+        // 通常の部分一致 ＆ 正規化部分一致
+        if (
+          titleLower.includes(term) ||
+          authorLower.includes(term) ||
+          normTitle.includes(normTerm) ||
+          normAuthor.includes(normTerm)
+        ) {
+          return true;
+        }
+        
+        // 検索ワードに対するシノニムを取得してマッチング
+        const synonyms = SEARCH_SYNONYMS[term] || [];
+        for (const syn of synonyms) {
+          const normSyn = normalizeSearchText(syn);
+          if (titleLower.includes(syn) || normTitle.includes(normSyn)) {
+            return true;
+          }
+        }
+        
+        // タイトルがシノニムのキーを含んでいる場合、検索語がその値のいずれかに一致・部分一致するか
+        for (const [key, synList] of Object.entries(SEARCH_SYNONYMS)) {
+          if (titleLower.includes(key) || normTitle.includes(normalizeSearchText(key))) {
+            if (synList.some(syn => term.includes(syn) || normTerm.includes(normalizeSearchText(syn)))) {
+              return true;
+            }
+          }
+        }
+        
+        return false;
+      });
     }
 
     // 2. ジャンル絞り込み
@@ -608,9 +735,15 @@ export default function MainApp() {
       }
     });
 
+    // 3.5 1巻のみ無料を非表示にするフィルターの適用
+    let finalGroupedResults = groupedResults;
+    if (hideSingleVolumeFree) {
+      finalGroupedResults = finalGroupedResults.filter(g => !isSingleVolumeFreeGroup(g.books));
+    }
+
     // 4. グループの並び替え (代表本またはグループ内最大値を基準にします)
     if (!isViewingSharedBookshelf) {
-      groupedResults.sort((a, b) => {
+      finalGroupedResults.sort((a, b) => {
       const repA = a.books[0];
       const repB = b.books[0];
 
@@ -667,8 +800,8 @@ export default function MainApp() {
     });
   }
 
-    return groupedResults;
-  }, [books, searchTerm, selectedGenre, sortBy, hideRead, readList, selectedStores, selectedCategory, showOnlyAllFree, showOnlyFavorites, favoritesList, isViewingSharedBookshelf, sharedBookshelfItems]);
+    return finalGroupedResults;
+  }, [books, searchTerm, selectedGenre, sortBy, hideRead, hideSingleVolumeFree, readList, selectedStores, selectedCategory, showOnlyAllFree, showOnlyFavorites, favoritesList, isViewingSharedBookshelf, sharedBookshelfItems]);
 
   // お気に入りかつ直近3日以内に最新話更新があったグループを抽出
   const updatedFavoritesGroups = useMemo(() => {
@@ -1088,6 +1221,8 @@ export default function MainApp() {
             sortBy={sortBy}
             setSortBy={handleSortChange}
             genres={genres}
+            hideSingleVolumeFree={hideSingleVolumeFree}
+            setHideSingleVolumeFree={setHideSingleVolumeFree}
           />
 
           {/* カテゴリタグ（無料連載 / 期間限定無料 / セール） */}
