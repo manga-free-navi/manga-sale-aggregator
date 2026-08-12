@@ -8,6 +8,8 @@ interface FilterBarProps {
   sortBy: string;
   setSortBy: (val: string) => void;
   genres: string[];
+  hideSingleVolumeFree: boolean;
+  setHideSingleVolumeFree: (val: boolean) => void;
 }
 
 /**
@@ -21,6 +23,8 @@ export default function FilterBar({
   sortBy,
   setSortBy,
   genres,
+  hideSingleVolumeFree,
+  setHideSingleVolumeFree,
 }: FilterBarProps) {
   return (
     <div className="filter-container">
@@ -70,6 +74,20 @@ export default function FilterBar({
             <option value="endDateAsc">終了期日が近い順</option>
             <option value="newest">更新順</option>
           </select>
+        </div>
+
+        {/* 1巻のみ無料を非表示 */}
+        <div className="input-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.4rem', marginTop: '1.4rem' }}>
+          <input
+            id="hide-single-free"
+            type="checkbox"
+            checked={hideSingleVolumeFree}
+            onChange={(e) => setHideSingleVolumeFree(e.target.checked)}
+            style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+          />
+          <label className="input-label" htmlFor="hide-single-free" style={{ margin: 0, cursor: 'pointer', userSelect: 'none' }}>
+            1巻のみ無料を除外
+          </label>
         </div>
       </div>
     </div>

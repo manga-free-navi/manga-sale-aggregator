@@ -452,13 +452,13 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
 
   // 最も価格が安く割引率の高いストア情報（代表取引）を算出
   const bestDeal = useMemo(() => {
-    const deals = Object.values(currentBook.stores).filter(Boolean) as StoreDeal[];
-    if (deals.length === 0) {
-      return { discountRate: 100, originalPrice: 0, salePrice: 0 };
+    const entries = Object.entries(currentBook.stores).filter(([_, deal]) => Boolean(deal)) as [string, StoreDeal][];
+    if (entries.length === 0) {
+      return { storeKey: '', deal: { discountRate: 100, originalPrice: 0, salePrice: 0 } };
     }
     // 最安価格順、かつ割引率の高いものを最優先とする
-    const sortedDeals = [...deals].sort((a, b) => a.salePrice - b.salePrice || b.discountRate - a.discountRate);
-    return sortedDeals[0];
+    const sortedEntries = [...entries].sort((a, b) => a[1].salePrice - b[1].salePrice || b[1].discountRate - a[1].discountRate);
+    return { storeKey: sortedEntries[0][0], deal: sortedEntries[0][1] };
   }, [currentBook.stores]);
 
   const featured = isFeaturedBook(currentBook);
@@ -483,9 +483,9 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
           ? '📺 無料連載'
           : currentBook.category === 'limited_free'
             ? '⏰ 期間限定無料'
-            : bestDeal.discountRate === 100
+            : bestDeal.deal.discountRate === 100
               ? '無料公開'
-              : `${bestDeal.discountRate}% OFF`
+              : `${bestDeal.deal.discountRate}% OFF`
         }
       </div>
 
@@ -803,16 +803,21 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         )}
 
         {/* 価格表示 */}
-        <div className="price-container">
-          {bestDeal.salePrice === 0 ? (
-            <span className="sale-price free">無料公開中</span>
-          ) : (
-            <span className="sale-price">¥{bestDeal.salePrice.toLocaleString()}</span>
-          )}
-          {bestDeal.originalPrice > 0 && bestDeal.salePrice !== bestDeal.originalPrice && (
-            <span className="original-price">¥{bestDeal.originalPrice.toLocaleString()}</span>
-          )}
-        </div>
+        {(() => {
+          const isCampaign = bestDeal.storeKey ? getStoreInfo(bestDeal.storeKey).action === '無料で読む' : false;
+          return (
+            <div className="price-container">
+              {bestDeal.deal.salePrice === 0 ? (
+                <span className="sale-price free">無料公開中</span>
+              ) : (
+                <span className="sale-price">¥{bestDeal.deal.salePrice.toLocaleString()}</span>
+              )}
+              {bestDeal.deal.originalPrice > 0 && bestDeal.deal.salePrice !== bestDeal.deal.originalPrice && !isCampaign && (
+                <span className="original-price">¥{bestDeal.deal.originalPrice.toLocaleString()}</span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* 無料連載向け：無料エピソードの直接リンクと更新スケジュール */}
         {currentBook.category === 'free_serialization' && (

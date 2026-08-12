@@ -162,7 +162,8 @@ async function parseMagapokeCampaign() {
 
     const endDate = parseEndDate(campaignText);
     const safeId = `${STORE_KEY}_${titleId}`;
-    const url = `https://pocket.shonenmagazine.com/title/${titleId}`;
+    const paddedTitleId = String(titleId).padStart(5, '0');
+    const url = `https://pocket.shonenmagazine.com/title/${paddedTitleId}`;
 
     books.push({
       id: safeId,
