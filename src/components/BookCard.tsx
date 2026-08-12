@@ -443,6 +443,8 @@ export default function BookCard({ books, animeVideos = [], gameSales = [] }: Bo
         return { name: 'COMIC FUZ', btnClass: 'btn-comicfuz', action: '無料で読む' };
       case 'comicfuz_campaign':
         return { name: 'COMIC FUZ（キャンペーン）', btnClass: 'btn-comicfuz', action: '無料で読む' };
+      case 'niconico':
+        return { name: 'ニコニコ漫画', btnClass: 'btn-niconico', action: '無料で読む' };
       default:
         return { name: storeKey, btnClass: '', action: '読む' };
     }

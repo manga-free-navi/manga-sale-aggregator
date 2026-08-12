@@ -1278,6 +1278,7 @@ export default function MainApp() {
               { label: 'MAGCOMI', emoji: '🏰', keys: ['magcomi'] },
               { label: 'ビッコミ', emoji: '🍊', keys: ['biccomic'] },
               { label: 'COMIC FUZ', emoji: '🎨', keys: ['comicfuz', 'comicfuz_campaign'] },
+              { label: 'ニコニコ漫画', emoji: '📺', keys: ['niconico'] },
               { label: '楽天Kobo', emoji: '📚', keys: ['rakuten'] },
               { label: 'シーモア', emoji: '🌊', keys: ['seimor'] },
               { label: 'BOOKWALKER', emoji: '🎮', keys: ['bookwalker'] },

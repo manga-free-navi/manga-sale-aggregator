@@ -15,6 +15,7 @@ const { parseMagapokeCampaign } = require('./parsers/magapokeCampaign'); // マ�
 const { parseComicdaysCampaign } = require('./parsers/comicdaysCampaign'); // コミックDAYS キャンペーン
 const { parseYanmaga } = require('./parsers/yanmaga'); // ヤンマガWeb
 const { parseBiccomicCampaign } = require('./parsers/biccomicCampaign'); // ビッコミ キャンペーン
+const { parseNiconico } = require('./parsers/niconico'); // ニコニコ漫画
 
 
 
@@ -465,6 +466,17 @@ async function run() {
     allBooks = allBooks.concat(biccomicCampaignCache);
   }
 
+  // 2.14 ニコニコ漫画
+  try {
+    const niconicoBooks = await parseNiconico();
+    if (niconicoBooks && niconicoBooks.length > 0) {
+      console.log(`[ニコニコ漫画] ${niconicoBooks.length} 件のデータを新規取得しました。`);
+      allBooks = allBooks.concat(niconicoBooks);
+    }
+  } catch (niconicoError) {
+    console.error('[ニコニコ漫画] 取得エラー:', niconicoError.message);
+  }
+
 
   try {
     // 各書籍の stores から各種情報を抽出するヘルパー
@@ -787,7 +799,7 @@ async function run() {
         // GigaViewer 系 / スクレイピング Webマンガは話数連載型のため、
         // 巻数表記がなくても正当なコミックとして維持する
         const isGigaviewerManga = group.some(b =>
-          Object.keys(b.stores).some(k => ['jumpplus', 'sundaywebry', 'comicdays', 'tonarinoyj', 'magapoke', 'magapoke_campaign', 'comicdays_campaign', 'yanmaga', 'yanmaga_campaign', 'kuragebunch', 'comicgardo', 'magcomi', 'biccomic'].includes(k))
+          Object.keys(b.stores).some(k => ['jumpplus', 'sundaywebry', 'comicdays', 'tonarinoyj', 'magapoke', 'magapoke_campaign', 'comicdays_campaign', 'yanmaga', 'yanmaga_campaign', 'kuragebunch', 'comicgardo', 'magcomi', 'biccomic', 'niconico'].includes(k))
         );
         // ジャンプ＋ 無料キャンペーン・復刻連載は巻数なしでも正当な作品として維持
         const isJumpplusCampaign = group.some(b =>
@@ -865,8 +877,8 @@ async function run() {
       const allStoreKeys = group.flatMap(b => Object.keys(b.stores));
       const allDeals = group.flatMap(b => Object.values(b.stores).filter(Boolean));
 
-      // Web連載系マンガ（ジャンプ+・サンデーうぇぶり・マガポケ・コミックDAYS・となジャン・ヤンマガWeb・くらげ・ガルド・マッグ）は「無料連載」
-      if (allStoreKeys.some(k => ['jumpplus', 'sundaywebry', 'sundaywebry_free', 'comicdays', 'tonarinoyj', 'magapoke', 'yanmaga', 'kuragebunch', 'comicgardo', 'magcomi'].includes(k))) {
+      // Web連載系マンガ（ジャンプ+・サンデーうぇぶり・マガポケ・コミックDAYS・となジャン・ヤンマガWeb・くらげ・ガルド・マッグ・ニコニコ漫画）は「無料連載」
+      if (allStoreKeys.some(k => ['jumpplus', 'sundaywebry', 'sundaywebry_free', 'comicdays', 'tonarinoyj', 'magapoke', 'yanmaga', 'kuragebunch', 'comicgardo', 'magcomi', 'niconico'].includes(k))) {
         category = 'free_serialization';
       }
       // キャンペーン系（ジャンプ+キャンペーン・BOOKWALKER・期間限定100%OFF）は「期間限定無料」

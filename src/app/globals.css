@@ -620,6 +620,16 @@ button, input, select {
   box-shadow: 0 0 15px rgba(255, 102, 153, 0.5);
 }
 
+/* 12.6 ニコニコ漫画 */
+.btn-niconico {
+  background: linear-gradient(135deg, #00b0f0, #0070c0);
+  border-color: transparent;
+  color: #fff !important;
+}
+.btn-niconico:hover {
+  box-shadow: 0 0 15px rgba(0, 176, 240, 0.5);
+}
+
 
 /* 広告プレースホルダー */
 .ad-wrapper {
